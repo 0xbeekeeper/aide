@@ -1,0 +1,30 @@
+{
+  "name": "@chief-of-staff/cli",
+  "version": "0.0.0",
+  "description": "cos — the Chief of Staff CLI. Runs skills, manages config, orchestrates MCP servers.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "cos": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/bin.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/bin.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@chief-of-staff/mcp-hub": "workspace:*",
+    "@chief-of-staff/mcp-telegram": "workspace:*",
+    "@chief-of-staff/storage": "workspace:*",
+    "@chief-of-staff/types": "workspace:*",
+    "commander": "^12.1.0",
+    "kleur": "^4.1.5"
+  }
+}
