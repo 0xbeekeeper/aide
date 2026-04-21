@@ -1,0 +1,22 @@
+{
+  "name": "chief-of-staff",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI Chief of Staff — framework-agnostic skill pack + MCP servers for personal work copilot",
+  "license": "MIT",
+  "packageManager": "pnpm@10.25.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2"
+  }
+}
