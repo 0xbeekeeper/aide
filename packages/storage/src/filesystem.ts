@@ -9,6 +9,8 @@ import type {
   DailyBrief,
   Style,
   ChatFilter,
+  CardConversation,
+  CardConversationTurn,
 } from "@aide-os/types";
 import { DEFAULT_CHAT_FILTER } from "@aide-os/types";
 import type { StorageAdapter, TriageQuery, TaskQuery } from "./adapter.js";
@@ -174,5 +176,39 @@ export class FilesystemAdapter implements StorageAdapter {
   async saveChatFilter(f: ChatFilter): Promise<void> {
     await this.ensure(this.root);
     await this.writeJson(this.dir("chat-filter.json"), f);
+  }
+
+  async getConversation(id: string): Promise<CardConversation | null> {
+    return this.readJson<CardConversation>(
+      this.dir("conversations", `${id}.json`),
+    );
+  }
+
+  async appendConversationTurn(
+    id: string,
+    turn: CardConversationTurn,
+    meta?: Partial<
+      Pick<CardConversation, "chat_id" | "chat_title" | "sender_name">
+    >,
+  ): Promise<CardConversation> {
+    const dir = this.dir("conversations");
+    await this.ensure(dir);
+    const existing = await this.getConversation(id);
+    const now = new Date().toISOString();
+    const next: CardConversation = existing ?? {
+      id,
+      chat_id: meta?.chat_id ?? "",
+      ...(meta?.chat_title !== undefined ? { chat_title: meta.chat_title } : {}),
+      ...(meta?.sender_name !== undefined
+        ? { sender_name: meta.sender_name }
+        : {}),
+      turns: [],
+      created_at: now,
+      updated_at: now,
+    };
+    next.turns.push(turn);
+    next.updated_at = now;
+    await this.writeJson(this.dir("conversations", `${id}.json`), next);
+    return next;
   }
 }

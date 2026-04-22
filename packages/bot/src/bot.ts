@@ -5,6 +5,7 @@ import { cardKeyboard, decodeCallback, renderCard } from "./card.js";
 import { readConfig } from "./config.js";
 import { getClient, resolveEntity } from "@aide-os/mcp-telegram";
 import { t } from "./i18n.js";
+import { buildAskPrompt, runClaudeAndCapture } from "./ask.js";
 
 interface CreateBotOptions {
   token: string;
@@ -16,6 +17,14 @@ interface CreateBotOptions {
  * Keyed by (ownerChatId) since only one owner is supported.
  */
 const awaitingEdit = new Map<number, { draftId: string; msgId: number }>();
+
+/**
+ * Follow-up ("追问") conversation state per owner. Unlike edit, this
+ * persists across turns until the user sends /done. The referenced
+ * draft_id anchors us to a specific card so the prompt can include its
+ * context every turn.
+ */
+const askingAbout = new Map<number, { draftId: string; cardMsgId: number }>();
 
 export function createBot(opts: CreateBotOptions): Bot {
   const bot = new Bot(opts.token);
@@ -199,6 +208,23 @@ export function createBot(opts: CreateBotOptions): Bot {
       return;
     }
 
+    if (action === "ask") {
+      const cardMsgId = ctx.callbackQuery.message?.message_id;
+      if (!cardMsgId) {
+        await ctx.answerCallbackQuery({ text: s.draft_not_found });
+        return;
+      }
+      askingAbout.set(opts.ownerId, { draftId, cardMsgId });
+      // Clear any pending edit — can't be in both modes at once.
+      awaitingEdit.delete(opts.ownerId);
+      const who = selected.sender_name ?? "?";
+      await ctx.reply(s.ask_prompt(who), {
+        reply_parameters: { message_id: cardMsgId },
+      });
+      await ctx.answerCallbackQuery();
+      return;
+    }
+
     if (action === "context") {
       const cardMsgId = ctx.callbackQuery.message?.message_id;
       await ctx.answerCallbackQuery({ text: s.context_fetching });
@@ -304,40 +330,129 @@ export function createBot(opts: CreateBotOptions): Bot {
     await ctx.reply(t().edit_cancelled);
   });
 
-  bot.on("message:text", async (ctx) => {
-    const pending = awaitingEdit.get(opts.ownerId);
-    if (!pending) return;
-    const text = ctx.message.text.trim();
-    if (text.startsWith("/")) return; // commands go to their handlers
-    awaitingEdit.delete(opts.ownerId);
+  bot.command("done", async (ctx) => {
+    const had = askingAbout.delete(opts.ownerId);
+    await ctx.reply(had ? t().ask_done : t().ask_no_active);
+  });
 
-    const drafts = await findDraftsById(storage, pending.draftId);
-    if (!drafts) {
-      await ctx.reply(t().draft_gone);
+  bot.on("message:text", async (ctx) => {
+    const text = ctx.message.text.trim();
+    if (text.startsWith("/")) return; // commands go to their own handlers
+
+    // Priority 1: edit mode (single turn, consume and send)
+    const pendingEdit = awaitingEdit.get(opts.ownerId);
+    if (pendingEdit) {
+      awaitingEdit.delete(opts.ownerId);
+      const drafts = await findDraftsById(storage, pendingEdit.draftId);
+      if (!drafts) {
+        await ctx.reply(t().draft_gone);
+        return;
+      }
+      const { selected } = drafts;
+      const result = await sendAsUser(selected.chat_id, text);
+      const s2 = t();
+      if (result.ok) {
+        await storage.markDraftSent(
+          pendingEdit.draftId,
+          new Date().toISOString(),
+        );
+        await ctx.reply(
+          `${s2.sent_to(selected.chat_title ?? selected.chat_id)}:\n\n${text}`,
+        );
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            pendingEdit.msgId,
+            `✅ <b>${esc(s2.sent_via_edit_label)}</b>  <i>msg ${selected.message_id}</i>\n<blockquote>${esc(text)}</blockquote>`,
+            {
+              parse_mode: "HTML",
+              link_preview_options: { is_disabled: true },
+            },
+          );
+        } catch {
+          // card may be older than TG's 48h edit window — safe to swallow
+        }
+      } else {
+        await ctx.reply(s2.send_failed(result.error));
+      }
       return;
     }
-    const { selected } = drafts;
 
-    const result = await sendAsUser(selected.chat_id, text);
-    const s2 = t();
-    if (result.ok) {
-      await storage.markDraftSent(pending.draftId, new Date().toISOString());
-      await ctx.reply(
-        `${s2.sent_to(selected.chat_title ?? selected.chat_id)}:\n\n${text}`,
-      );
-      // Update the original card so it's no longer pending.
-      try {
-        await ctx.api.editMessageText(
-          ctx.chat.id,
-          pending.msgId,
-          `✅ <b>${esc(s2.sent_via_edit_label)}</b>  <i>msg ${selected.message_id}</i>\n<blockquote>${esc(text)}</blockquote>`,
-          { parse_mode: "HTML", link_preview_options: { is_disabled: true } },
-        );
-      } catch {
-        // card may be older than TG's 48h edit window — safe to swallow
+    // Priority 2: ask mode (multi-turn, stays open until /done)
+    const asking = askingAbout.get(opts.ownerId);
+    if (asking) {
+      const drafts = await findDraftsById(storage, asking.draftId);
+      if (!drafts) {
+        askingAbout.delete(opts.ownerId);
+        await ctx.reply(t().draft_gone);
+        return;
       }
-    } else {
-      await ctx.reply(s2.send_failed(result.error));
+      const { selected, siblings } = drafts;
+      const triage = await storage.getTriage(selected.message_id);
+
+      // Persist the user's question BEFORE running claude so if it crashes
+      // the audit log still shows what was asked.
+      const nowUser = new Date().toISOString();
+      await storage.appendConversationTurn(
+        selected.message_id,
+        { role: "user", text, ts: nowUser },
+        {
+          chat_id: selected.chat_id,
+          ...(selected.chat_title !== undefined
+            ? { chat_title: selected.chat_title }
+            : {}),
+          ...(selected.sender_name !== undefined
+            ? { sender_name: selected.sender_name }
+            : {}),
+        },
+      );
+
+      // Ack immediately, then compute (claude -p takes a few seconds).
+      const thinkingMsg = await ctx.reply(t().ask_thinking, {
+        reply_parameters: { message_id: asking.cardMsgId },
+      });
+
+      try {
+        const prompt = await buildAskPrompt(
+          { draft: selected, siblings, triage },
+          text,
+        );
+        const answer = await runClaudeAndCapture(prompt);
+        const nowAssistant = new Date().toISOString();
+        await storage.appendConversationTurn(selected.message_id, {
+          role: "assistant",
+          text: answer,
+          ts: nowAssistant,
+        });
+        // Replace the "thinking…" placeholder with the actual answer.
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            thinkingMsg.message_id,
+            answer.length > 0 ? answer : "(empty answer)",
+            { link_preview_options: { is_disabled: true } },
+          );
+        } catch {
+          // If the answer has markdown-like chars editMessageText rejects,
+          // fall back to a fresh reply.
+          await ctx.reply(answer, {
+            reply_parameters: { message_id: asking.cardMsgId },
+            link_preview_options: { is_disabled: true },
+          });
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            thinkingMsg.message_id,
+            t().ask_failed(msg),
+          );
+        } catch {
+          await ctx.reply(t().ask_failed(msg));
+        }
+      }
+      return;
     }
   });
 

@@ -36,7 +36,13 @@ interface Strings {
   btn_cycle: string;
   btn_edit: string;
   btn_context: string;
+  btn_ask: string;
   btn_skip: string;
+  ask_prompt: (who: string) => string;
+  ask_thinking: string;
+  ask_failed: (err: string) => string;
+  ask_no_active: string;
+  ask_done: string;
   context_header: (n: number) => string;
   context_fetching: string;
   context_failed: (err: string) => string;
@@ -94,7 +100,14 @@ const EN: Strings = {
   btn_cycle: "🔄 Next style",
   btn_edit: "📝 Edit",
   btn_context: "🔍 Context",
+  btn_ask: "💬 Ask",
   btn_skip: "⏭️ Skip",
+  ask_prompt: (who: string) =>
+    `💬 Ask me anything about this card (${who}). Type your question — I'll keep the thread open until you send /done.`,
+  ask_thinking: "thinking…",
+  ask_failed: (err: string) => `❌ ask failed: ${err}`,
+  ask_no_active: "No active card conversation. Tap 💬 Ask on a card first.",
+  ask_done: "conversation closed.",
   context_header: (n: number) => `📚 Last ${n} message(s) in this chat:`,
   context_fetching: "fetching context…",
   context_failed: (err: string) => `❌ couldn't fetch context: ${err}`,
@@ -106,7 +119,7 @@ const EN: Strings = {
   sent_via_edit_label: "Sent (edited)",
   failed_prefix: "Failed",
   start_greeting:
-    "✓ aide bot is online.\n\nI'll push reply-draft cards here. On each card:\n  ✅ Send       — I send your selected draft as you\n  🔄 Next style — show the next candidate draft\n  📝 Edit       — you type a replacement; I send that\n  ⏭️ Skip       — drop the card without sending\n\nCommands:\n/pending — how many cards are still waiting for you\n/tasks   — show open tasks with action buttons",
+    "✓ aide bot is online.\n\nOn each card:\n  ✅ Send       — send the draft as you\n  🔄 Next style — switch to next candidate\n  💬 Ask        — chat with me about this card\n  📝 Edit       — type your own version\n  🔍 Context    — show surrounding messages\n  ⏭️ Skip       — drop the card\n\nCommands:\n/pending — how many cards are waiting\n/tasks   — open task list\n/done    — close an active 💬 Ask conversation",
   not_owner:
     "This bot is privately configured for its owner. You are not its owner — aborting.",
   cycle_toast: (style) => `→ ${style}`,
@@ -153,7 +166,14 @@ const ZH: Strings = {
   btn_cycle: "🔄 换风格",
   btn_edit: "📝 编辑",
   btn_context: "🔍 上下文",
+  btn_ask: "💬 追问",
   btn_skip: "⏭️ 跳过",
+  ask_prompt: (who) =>
+    `💬 关于这条（${who}）你想问什么都可以。直接在这里打字，我会一直听到你发 /done 为止。`,
+  ask_thinking: "想一下…",
+  ask_failed: (err) => `❌ 追问失败：${err}`,
+  ask_no_active: "当前没有在进行的追问。先点卡片上的 💬 追问 按钮。",
+  ask_done: "对话结束。",
   context_header: (n: number) => `📚 最近 ${n} 条消息：`,
   context_fetching: "拉取上下文中…",
   context_failed: (err: string) => `❌ 拉上下文失败：${err}`,
@@ -165,7 +185,7 @@ const ZH: Strings = {
   sent_via_edit_label: "已发送（编辑版）",
   failed_prefix: "发送失败",
   start_greeting:
-    "✓ aide bot 已上线。\n\n我会把回复草稿以卡片形式推给你。每张卡片上：\n  ✅ 发送     — 用你的身份把草稿发给对方\n  🔄 换风格   — 切换到下一条候选草稿\n  📝 编辑     — 你打字替换草稿，由我发送\n  ⏭️ 跳过     — 不发，关掉卡片\n\n命令：\n/pending — 查看还剩几张待处理卡片\n/tasks   — 查看待办任务（可点按钮完成/推迟/丢弃）",
+    "✓ aide bot 已上线。\n\n每张卡片上：\n  ✅ 发送     — 用你的身份发草稿\n  🔄 换风格   — 切下一条候选\n  💬 追问     — 针对这条跟我聊\n  📝 编辑     — 你打字替换\n  🔍 上下文   — 看前后消息\n  ⏭️ 跳过     — 不发\n\n命令：\n/pending — 剩几张待处理\n/tasks   — 待办任务\n/done    — 退出 💬 追问 对话",
   not_owner:
     "此 bot 仅对其 owner 开放。你不是 owner，已终止。",
   cycle_toast: (style) => `→ ${style}`,

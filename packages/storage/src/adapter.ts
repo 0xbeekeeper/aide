@@ -6,6 +6,8 @@ import type {
   DailyBrief,
   Style,
   ChatFilter,
+  CardConversation,
+  CardConversationTurn,
 } from "@aide-os/types";
 
 export interface TriageQuery {
@@ -42,4 +44,11 @@ export interface StorageAdapter {
 
   loadChatFilter(): Promise<ChatFilter>;
   saveChatFilter(f: ChatFilter): Promise<void>;
+
+  getConversation(id: string): Promise<CardConversation | null>;
+  appendConversationTurn(
+    id: string,
+    turn: CardConversationTurn,
+    meta?: Partial<Pick<CardConversation, "chat_id" | "chat_title" | "sender_name">>,
+  ): Promise<CardConversation>;
 }
