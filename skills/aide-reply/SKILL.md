@@ -115,6 +115,7 @@ End with: `Saved <3N> drafts to the hub. Copy/paste the one you like into Telegr
 5. **Redact sensitive content** — if the thread contains secrets, leave them out of the draft (don't echo API keys / seed phrases / private keys back).
 6. **If triage.priority === "ignore" or "spam"** → skip that message entirely, don't draft.
 7. **If triage.confidence < 0.5** → skip, tell the user "triage was uncertain; re-run `aide run triage` on this thread for better context."
+8. **User profile overrides style defaults** — if the calling prompt includes a `<user_profile>…</user_profile>` block, treat its "Reply voice" and "Things I do NOT want in drafts" sections as hard constraints. They trump the generic style descriptions in step 2 above. If the profile says "decisive, no pleasantries" and the user's casual samples still contain pleasantries, remove the pleasantries anyway.
 
 ## Not in scope
 

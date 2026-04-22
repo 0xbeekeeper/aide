@@ -39,6 +39,16 @@ export function createBot(opts: CreateBotOptions): Bot {
 
   bot.command("ping", (ctx) => ctx.reply("pong"));
 
+  bot.command("pending", async (ctx) => {
+    const triages = await storage.listTriage({ needs_reply: true });
+    let n = 0;
+    for (const tt of triages) {
+      const drafts = await storage.listDrafts(tt.message_id);
+      if (drafts.length > 0 && !drafts.some((d) => d.sent_at)) n++;
+    }
+    await ctx.reply(n === 0 ? t().pending_none : t().pending_count(n));
+  });
+
   bot.on("callback_query:data", async (ctx) => {
     const data = ctx.callbackQuery.data;
     const decoded = decodeCallback(data);
@@ -95,6 +105,67 @@ export function createBot(opts: CreateBotOptions): Bot {
       return;
     }
 
+    if (action === "context") {
+      const cardMsgId = ctx.callbackQuery.message?.message_id;
+      await ctx.answerCallbackQuery({ text: s.context_fetching });
+      try {
+        const client = await getClient();
+        const entity = await client.getEntity(selected.chat_id);
+        const msgs = await client.getMessages(entity, { limit: 10 });
+        const me = await client.getMe();
+        const selfId = String((me as { id: unknown }).id ?? "");
+        const lines: string[] = [`<b>${esc(s.context_header(msgs.length))}</b>`];
+        // msgs are newest first; show oldest→newest for reading flow
+        for (const m of [...msgs].reverse()) {
+          if (!m || typeof m.message !== "string" || m.message.length === 0) continue;
+          const ts = new Date((m.date ?? 0) * 1000).toLocaleString("zh-CN", {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          let who = "?";
+          if (m.senderId) {
+            const sid = String(m.senderId);
+            if (sid === selfId) {
+              who = "👤 你";
+            } else {
+              try {
+                const ent = await client.getEntity(m.senderId);
+                const name =
+                  [
+                    (ent as { firstName?: string }).firstName ?? "",
+                    (ent as { lastName?: string }).lastName ?? "",
+                  ]
+                    .join(" ")
+                    .trim() ||
+                  (ent as { username?: string }).username ||
+                  "?";
+                who = esc(name);
+              } catch {
+                who = esc(sid);
+              }
+            }
+          }
+          lines.push(
+            `<i>${esc(ts)}</i> · <b>${who}</b>\n${esc(m.message)}`,
+          );
+        }
+        const body = lines.join("\n\n");
+        await ctx.reply(body, {
+          parse_mode: "HTML",
+          link_preview_options: { is_disabled: true },
+          ...(cardMsgId ? { reply_parameters: { message_id: cardMsgId } } : {}),
+        });
+      } catch (e) {
+        await ctx.reply(
+          s.context_failed(e instanceof Error ? e.message : String(e)),
+          cardMsgId ? { reply_parameters: { message_id: cardMsgId } } : {},
+        );
+      }
+      return;
+    }
+
     if (action === "send") {
       await ctx.answerCallbackQuery({ text: s.sending_toast });
       const result = await sendAsUser(selected.chat_id, selected.text);
@@ -134,13 +205,25 @@ export function createBot(opts: CreateBotOptions): Bot {
     const { selected } = drafts;
 
     const result = await sendAsUser(selected.chat_id, text);
+    const s2 = t();
     if (result.ok) {
       await storage.markDraftSent(pending.draftId, new Date().toISOString());
       await ctx.reply(
-        `${t().sent_to(selected.chat_title ?? selected.chat_id)}:\n\n${text}`,
+        `${s2.sent_to(selected.chat_title ?? selected.chat_id)}:\n\n${text}`,
       );
+      // Update the original card so it's no longer pending.
+      try {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          pending.msgId,
+          `✅ <b>${esc(s2.sent_via_edit_label)}</b>  <i>msg ${selected.message_id}</i>\n<blockquote>${esc(text)}</blockquote>`,
+          { parse_mode: "HTML", link_preview_options: { is_disabled: true } },
+        );
+      } catch {
+        // card may be older than TG's 48h edit window — safe to swallow
+      }
     } else {
-      await ctx.reply(t().send_failed(result.error));
+      await ctx.reply(s2.send_failed(result.error));
     }
   });
 

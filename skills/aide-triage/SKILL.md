@@ -107,6 +107,7 @@ Every `Triage` record must conform to the `Triage` type from `@aide-os/types`:
 5. **Handle groups carefully** — if `chat.kind === "group"`, prioritize messages that @mention the user or reply to the user's messages; downgrade others.
 6. **Stop on first error** — if an MCP tool fails, report the error to the user and do not continue. Never invent data.
 7. **Language preference** — the user's preferred language is in the `AIDE_LANG` env var (`zh` = 中文, `en` = English, default `en`). Write `summary`, `reasoning`, and the final markdown summary in that language. Chat titles and sender names stay verbatim regardless of language.
+8. **User profile overrides** — if the calling prompt includes a `<user_profile>…</user_profile>` block, treat the rubric inside as authoritative. In particular: the profile may define strict `needs_reply` / `priority` mappings (e.g. "private DM → needs_reply: true, priority ≥ high"; "group unrelated → ignore and do not create a triage record"). Those override the defaults in step 2 / 3 above. The profile may also define the user's role (e.g. CTO) — use it to judge what "related to me" means.
 
 ## Not in scope
 

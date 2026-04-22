@@ -18,6 +18,11 @@ import {
   draftsMarkSentCommand,
 } from "./commands/drafts.js";
 import { langCommand } from "./commands/lang.js";
+import {
+  profileShowCommand,
+  profileEditCommand,
+  profileResetCommand,
+} from "./commands/profile.js";
 import type { Runtime } from "./runtime.js";
 
 const program = new Command();
@@ -122,6 +127,25 @@ program
   .action(async (value: string | undefined) =>
     process.exit(await langCommand(value)),
   );
+
+const profile = program
+  .command("profile")
+  .description("manage your persona + triage rubric (injected into every run)");
+
+profile
+  .command("show", { isDefault: true })
+  .description("print the current profile")
+  .action(async () => process.exit(await profileShowCommand()));
+
+profile
+  .command("edit")
+  .description("open ~/.config/aide/profile.md in $EDITOR")
+  .action(async () => process.exit(await profileEditCommand()));
+
+profile
+  .command("reset")
+  .description("overwrite profile with a starter template")
+  .action(async () => process.exit(await profileResetCommand()));
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);

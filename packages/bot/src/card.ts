@@ -1,7 +1,7 @@
 import type { ReplyDraft, Triage } from "@aide-os/types";
 import { t } from "./i18n.js";
 
-export type CardAction = "send" | "cycle" | "edit" | "skip";
+export type CardAction = "send" | "cycle" | "edit" | "context" | "skip";
 
 /**
  * Callback data format:  aide:<action>:<draftId>
@@ -20,7 +20,7 @@ export function decodeCallback(data: string): DecodedCallback | null {
   const parts = data.split(":");
   if (parts.length < 3 || parts[0] !== "aide") return null;
   const action = parts[1] as CardAction;
-  if (!["send", "cycle", "edit", "skip"].includes(action)) return null;
+  if (!["send", "cycle", "edit", "context", "skip"].includes(action)) return null;
   const draftId = parts.slice(2).join(":");
   if (!draftId) return null;
   return { action, draftId };
@@ -64,6 +64,7 @@ export function renderCard(
 ): string {
   const s = t();
   const lines: string[] = [];
+  lines.push(`<b>${esc(s.card_pending_badge)}</b>`);
   const title = selected.chat_title ?? `chat ${selected.chat_id}`;
   const sender = selected.sender_name ?? "?";
   lines.push(
@@ -110,9 +111,15 @@ export function cardKeyboard(selected: ReplyDraft) {
       ],
       [
         {
+          text: s.btn_context,
+          callback_data: encodeCallback("context", selected.id),
+        },
+        {
           text: s.btn_edit,
           callback_data: encodeCallback("edit", selected.id),
         },
+      ],
+      [
         {
           text: s.btn_skip,
           callback_data: encodeCallback("skip", selected.id),

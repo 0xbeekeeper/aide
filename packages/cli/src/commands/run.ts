@@ -7,6 +7,7 @@ import {
   type Runtime,
 } from "../runtime.js";
 import { SKILLS, findSkill } from "../skills.js";
+import { enrichWithProfile } from "../profile.js";
 
 export interface RunOptions {
   runtime?: Runtime;
@@ -38,11 +39,12 @@ export async function runCommand(
   applyEnvToProcess(env);
 
   const runtime = opts.runtime ?? detectRuntime();
+  const prompt = await enrichWithProfile(skill.prompt);
 
   console.log(kleur.dim(`▶ running ${skill.name} via ${runtime}`));
 
   if (runtime === "claude-code") {
-    return await runClaudeCode(skill.prompt);
+    return await runClaudeCode(prompt);
   }
   if (runtime === "openclaw") {
     console.error(
@@ -50,10 +52,10 @@ export async function runCommand(
         "openclaw runtime adapter not yet implemented — falling back to manual instructions.",
       ),
     );
-    console.log(manualInstructions(skill.name, skill.prompt));
+    console.log(manualInstructions(skill.name, prompt));
     return 0;
   }
 
-  console.log(manualInstructions(skill.name, skill.prompt));
+  console.log(manualInstructions(skill.name, prompt));
   return 0;
 }
