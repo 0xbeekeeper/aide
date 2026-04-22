@@ -4,6 +4,7 @@ import type { ReplyDraft } from "@aide-os/types";
 import { cardKeyboard, decodeCallback, renderCard } from "./card.js";
 import { readConfig } from "./config.js";
 import { getClient } from "@aide-os/mcp-telegram";
+import { t } from "./i18n.js";
 
 interface CreateBotOptions {
   token: string;
@@ -25,9 +26,7 @@ export function createBot(opts: CreateBotOptions): Bot {
     const from = ctx.from?.id;
     if (from !== opts.ownerId) {
       if (ctx.chat?.type === "private") {
-        await ctx.reply(
-          "This bot is privately configured for its owner. You are not its owner — aborting.",
-        );
+        await ctx.reply(t().not_owner);
       }
       return;
     }
@@ -35,14 +34,7 @@ export function createBot(opts: CreateBotOptions): Bot {
   });
 
   bot.command("start", async (ctx) => {
-    await ctx.reply(
-      "✓ aide bot is online.\n\n" +
-        "I'll push reply-draft cards here. On each card:\n" +
-        "  ✅ Send       — I send your selected draft as you\n" +
-        "  🔄 Next style — show the next candidate draft\n" +
-        "  📝 Edit       — you type a replacement; I send that\n" +
-        "  ⏭️ Skip       — drop the card without sending\n",
-    );
+    await ctx.reply(t().start_greeting);
   });
 
   bot.command("ping", (ctx) => ctx.reply("pong"));
@@ -57,18 +49,19 @@ export function createBot(opts: CreateBotOptions): Bot {
     const { action, draftId } = decoded;
     const drafts = await findDraftsById(storage, draftId);
     if (!drafts) {
-      await ctx.answerCallbackQuery({ text: "draft not found" });
+      await ctx.answerCallbackQuery({ text: t().draft_not_found });
       return;
     }
     const { selected, siblings } = drafts;
+    const s = t();
 
     if (action === "skip") {
       await storage.markDraftSent(draftId, `skipped:${new Date().toISOString()}`);
       await ctx.editMessageText(
-        `⏭️ <b>Skipped</b>  <i>msg ${selected.message_id}</i>\n<blockquote>${esc(selected.source_excerpt ?? "")}</blockquote>`,
+        `⏭️ <b>${esc(s.skipped_label)}</b>  <i>msg ${selected.message_id}</i>\n<blockquote>${esc(selected.source_excerpt ?? "")}</blockquote>`,
         { parse_mode: "HTML", link_preview_options: { is_disabled: true } },
       );
-      await ctx.answerCallbackQuery({ text: "skipped" });
+      await ctx.answerCallbackQuery({ text: s.skipped_label });
       return;
     }
 
@@ -77,7 +70,7 @@ export function createBot(opts: CreateBotOptions): Bot {
       const idx = sorted.findIndex((d) => d.id === draftId);
       const next = sorted[(idx + 1) % sorted.length];
       if (!next) {
-        await ctx.answerCallbackQuery({ text: "no sibling drafts" });
+        await ctx.answerCallbackQuery({ text: s.draft_not_found });
         return;
       }
       const triage = await storage.getTriage(next.message_id);
@@ -86,37 +79,34 @@ export function createBot(opts: CreateBotOptions): Bot {
         reply_markup: cardKeyboard(next),
         link_preview_options: { is_disabled: true },
       });
-      await ctx.answerCallbackQuery({ text: `→ ${next.style}` });
+      await ctx.answerCallbackQuery({ text: s.cycle_toast(next.style) });
       return;
     }
 
     if (action === "edit") {
       const msgId = ctx.callbackQuery.message?.message_id;
       if (!msgId) {
-        await ctx.answerCallbackQuery({ text: "missing message" });
+        await ctx.answerCallbackQuery({ text: s.draft_not_found });
         return;
       }
       awaitingEdit.set(opts.ownerId, { draftId, msgId });
-      await ctx.reply(
-        "📝 Reply to this message with the exact text you want sent.\n" +
-          "I'll send what you type verbatim. Type /cancel to abort.",
-      );
-      await ctx.answerCallbackQuery({ text: "edit mode" });
+      await ctx.reply(s.edit_prompt);
+      await ctx.answerCallbackQuery();
       return;
     }
 
     if (action === "send") {
-      await ctx.answerCallbackQuery({ text: "sending…" });
+      await ctx.answerCallbackQuery({ text: s.sending_toast });
       const result = await sendAsUser(selected.chat_id, selected.text);
       if (result.ok) {
         await storage.markDraftSent(draftId, new Date().toISOString());
         await ctx.editMessageText(
-          `✅ <b>Sent</b> — ${esc(selected.style)}  <i>msg ${selected.message_id}</i>\n<blockquote>${esc(selected.text)}</blockquote>`,
+          `✅ <b>${esc(s.sent_label)}</b> — ${esc(selected.style)}  <i>msg ${selected.message_id}</i>\n<blockquote>${esc(selected.text)}</blockquote>`,
           { parse_mode: "HTML", link_preview_options: { is_disabled: true } },
         );
       } else {
         await ctx.editMessageText(
-          `❌ <b>Failed</b>: ${esc(result.error)}\n<blockquote>${esc(selected.text)}</blockquote>`,
+          `❌ <b>${esc(s.failed_prefix)}</b>: ${esc(result.error)}\n<blockquote>${esc(selected.text)}</blockquote>`,
           { parse_mode: "HTML", link_preview_options: { is_disabled: true } },
         );
       }
@@ -126,7 +116,7 @@ export function createBot(opts: CreateBotOptions): Bot {
 
   bot.command("cancel", async (ctx) => {
     awaitingEdit.delete(opts.ownerId);
-    await ctx.reply("edit cancelled.");
+    await ctx.reply(t().edit_cancelled);
   });
 
   bot.on("message:text", async (ctx) => {
@@ -138,7 +128,7 @@ export function createBot(opts: CreateBotOptions): Bot {
 
     const drafts = await findDraftsById(storage, pending.draftId);
     if (!drafts) {
-      await ctx.reply("draft no longer exists — aborted.");
+      await ctx.reply(t().draft_gone);
       return;
     }
     const { selected } = drafts;
@@ -147,10 +137,10 @@ export function createBot(opts: CreateBotOptions): Bot {
     if (result.ok) {
       await storage.markDraftSent(pending.draftId, new Date().toISOString());
       await ctx.reply(
-        `✅ sent to ${selected.chat_title ?? selected.chat_id}:\n\n${text}`,
+        `${t().sent_to(selected.chat_title ?? selected.chat_id)}:\n\n${text}`,
       );
     } else {
-      await ctx.reply(`❌ send failed: ${result.error}`);
+      await ctx.reply(t().send_failed(result.error));
     }
   });
 

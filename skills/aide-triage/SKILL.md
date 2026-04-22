@@ -106,6 +106,7 @@ Every `Triage` record must conform to the `Triage` type from `@aide-os/types`:
 4. **Redact secrets in logs** — if you see an API key / seed phrase / private key in a message, replace with `[REDACTED]` in the `summary` field but keep it in the raw message that's saved (user's choice to view).
 5. **Handle groups carefully** — if `chat.kind === "group"`, prioritize messages that @mention the user or reply to the user's messages; downgrade others.
 6. **Stop on first error** — if an MCP tool fails, report the error to the user and do not continue. Never invent data.
+7. **Language preference** — the user's preferred language is in the `AIDE_LANG` env var (`zh` = 中文, `en` = English, default `en`). Write `summary`, `reasoning`, and the final markdown summary in that language. Chat titles and sender names stay verbatim regardless of language.
 
 ## Not in scope
 

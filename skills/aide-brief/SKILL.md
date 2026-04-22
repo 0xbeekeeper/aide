@@ -106,6 +106,7 @@ Print the markdown exactly as generated. Do not add preamble or postscript.
 3. **Keep it skimmable** — the whole brief should fit on one screen. Trim aggressively.
 4. **Time zones** — use the user's local date in the H1 but ISO 8601 in the period line.
 5. **Idempotent** — running twice in a day should overwrite the earlier brief (same `id` pattern).
+6. **Language** — write section headers, prose, and the suggested-focus paragraph in the user's preferred language (`AIDE_LANG` env var: `zh` = 中文, `en` = English, default `en`). Chat titles, sender names, intent / priority values stay verbatim.
 
 ## Not in scope
 

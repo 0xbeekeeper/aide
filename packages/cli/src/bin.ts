@@ -17,6 +17,7 @@ import {
   draftsShowCommand,
   draftsMarkSentCommand,
 } from "./commands/drafts.js";
+import { langCommand } from "./commands/lang.js";
 import type { Runtime } from "./runtime.js";
 
 const program = new Command();
@@ -113,6 +114,13 @@ drafts
   .description("mark a draft as sent (records timestamp)")
   .action(async (draftId: string) =>
     process.exit(await draftsMarkSentCommand(draftId)),
+  );
+
+program
+  .command("lang [value]")
+  .description("show or set language preference (en | zh)")
+  .action(async (value: string | undefined) =>
+    process.exit(await langCommand(value)),
   );
 
 program.parseAsync(process.argv).catch((err) => {

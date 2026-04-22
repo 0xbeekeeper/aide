@@ -110,10 +110,11 @@ End with: `Saved <3N> drafts to the hub. Copy/paste the one you like into Telegr
 
 1. **Never call `send_message`** — this skill only drafts. Sending is a separate manual step.
 2. **Never invent facts** — if you don't know the answer, say "I need more info from you" rather than guessing.
-3. **Match the language of the incoming message** — do not translate.
-4. **Redact sensitive content** — if the thread contains secrets, leave them out of the draft (don't echo API keys / seed phrases / private keys back).
-5. **If triage.priority === "ignore" or "spam"** → skip that message entirely, don't draft.
-6. **If triage.confidence < 0.5** → skip, tell the user "triage was uncertain; re-run `aide run triage` on this thread for better context."
+3. **Match the language of the incoming message** for the draft `text` — do not translate.
+4. **`reasoning` follows `AIDE_LANG`** — the one-sentence why-explanation is for the USER, not the counterpart. Write it in the user's preferred language (`AIDE_LANG` env var: `zh` = 中文, `en` = English, default `en`). If `AIDE_LANG=zh`, write reasoning in Chinese even when the draft itself is in English.
+5. **Redact sensitive content** — if the thread contains secrets, leave them out of the draft (don't echo API keys / seed phrases / private keys back).
+6. **If triage.priority === "ignore" or "spam"** → skip that message entirely, don't draft.
+7. **If triage.confidence < 0.5** → skip, tell the user "triage was uncertain; re-run `aide run triage` on this thread for better context."
 
 ## Not in scope
 

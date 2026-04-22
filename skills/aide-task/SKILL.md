@@ -104,7 +104,7 @@ End with: `Saved <N> tasks to hub.` If Notion sync ran: `Synced <K> to Notion.`
 2. **One task per message max** — if a message contains multiple asks, pick the most concrete one.
 3. **No tasks for spam / FYI / social** triage records.
 4. **Never delete existing tasks** in this skill — only create. Status changes happen elsewhere.
-5. **Language match** — action text in the language of the source message.
+5. **Action language** — write `action` in `AIDE_LANG` (env var: `zh` = 中文, `en` = English, default `en`). This is the user's todo list, not a forward to the source thread. Keep proper nouns (people, product names) verbatim.
 
 ## Not in scope
 

@@ -1,4 +1,5 @@
 import type { ReplyDraft, Triage } from "@aide-os/types";
+import { t } from "./i18n.js";
 
 export type CardAction = "send" | "cycle" | "edit" | "skip";
 
@@ -61,10 +62,13 @@ export function renderCard(
   triage: Triage | undefined,
   allDrafts: ReplyDraft[],
 ): string {
+  const s = t();
   const lines: string[] = [];
   const title = selected.chat_title ?? `chat ${selected.chat_id}`;
   const sender = selected.sender_name ?? "?";
-  lines.push(`📩 <b>${esc(title)}</b> · from <i>${esc(sender)}</i>`);
+  lines.push(
+    `📩 <b>${esc(title)}</b> · ${esc(s.card_from)} <i>${esc(sender)}</i>`,
+  );
   if (selected.source_excerpt) {
     const quoted = selected.source_excerpt
       .split("\n")
@@ -74,42 +78,43 @@ export function renderCard(
   }
   if (triage) {
     lines.push(
-      `🧠 ${esc(triage.priority)} / ${esc(triage.intent)}  conf ${triage.confidence.toFixed(2)}`,
+      `🧠 ${esc(triage.priority)} / ${esc(triage.intent)}  ${esc(s.card_confidence)} ${triage.confidence.toFixed(2)}`,
     );
   }
   lines.push("");
   const idx = allDrafts.findIndex((d) => d.id === selected.id);
   const pos = idx === -1 ? 1 : idx + 1;
   lines.push(
-    `${styleEmoji(selected.style)} <b>${selected.style.toUpperCase()}</b>  ${confDot(selected.confidence)} <code>${selected.confidence.toFixed(2)}</code>  <i>(${pos}/${allDrafts.length})</i>`,
+    `${styleEmoji(selected.style)} <b>${selected.style.toUpperCase()}</b>  ${confDot(selected.confidence)} <code>${selected.confidence.toFixed(2)}</code>  <i>${esc(s.card_position_of(pos, allDrafts.length))}</i>`,
   );
   lines.push(`<pre>${esc(selected.text)}</pre>`);
   if (selected.reasoning) {
-    lines.push(`<i>why: ${esc(selected.reasoning)}</i>`);
+    lines.push(`<i>${esc(s.card_why_prefix)}: ${esc(selected.reasoning)}</i>`);
   }
   return lines.join("\n");
 }
 
 export function cardKeyboard(selected: ReplyDraft) {
+  const s = t();
   return {
     inline_keyboard: [
       [
         {
-          text: "✅ Send",
+          text: s.btn_send,
           callback_data: encodeCallback("send", selected.id),
         },
         {
-          text: "🔄 Next style",
+          text: s.btn_cycle,
           callback_data: encodeCallback("cycle", selected.id),
         },
       ],
       [
         {
-          text: "📝 Edit",
+          text: s.btn_edit,
           callback_data: encodeCallback("edit", selected.id),
         },
         {
-          text: "⏭️ Skip",
+          text: s.btn_skip,
           callback_data: encodeCallback("skip", selected.id),
         },
       ],
