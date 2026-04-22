@@ -78,9 +78,9 @@ async function autoSyncIfReplied(
 
 /**
  * Push every pending draft (highest-confidence per message) to the owner.
- * Skips drafts whose source message has already been sent, skipped, or the
- * user has already replied to outside the bot.
- * Returns { pushed, skipped, auto_resolved } counts.
+ * Skips drafts whose source message has already been sent, pushed (still
+ * waiting for user action), or the user has already replied to outside the
+ * bot. Returns { pushed, skipped, auto_resolved } counts.
  */
 export async function pushAllPending(
   bot: Bot,
@@ -96,7 +96,14 @@ export async function pushAllPending(
       skipped++;
       continue;
     }
+    // Already sent: nothing to do.
     if (drafts.some((d) => d.sent_at)) {
+      skipped++;
+      continue;
+    }
+    // Already pushed and still waiting for the user. DO NOT re-push — this
+    // is the duplicate-notification bug the user flagged.
+    if (drafts.some((d) => d.pushed_at)) {
       skipped++;
       continue;
     }
@@ -112,7 +119,17 @@ export async function pushAllPending(
       skipped++;
       continue;
     }
-    await pushDraftCard(bot, best, drafts);
+    const tgMessageId = await pushDraftCard(bot, best, drafts);
+    // Mark ALL siblings as pushed so next cycle doesn't pick a different
+    // style of the same message.
+    const pushedAt = new Date().toISOString();
+    for (const d of drafts) {
+      await storage.saveDraft({
+        ...d,
+        pushed_at: pushedAt,
+        ...(d.id === best.id ? { pushed_message_id: tgMessageId } : {}),
+      });
+    }
     pushed++;
   }
   return { pushed, skipped, auto_resolved: autoResolved };

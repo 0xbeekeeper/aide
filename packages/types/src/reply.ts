@@ -19,4 +19,7 @@ export interface ReplyDraft {
   reasoning?: string;
   created_at: string;
   sent_at?: string;
+  /** When set, this draft (or a sibling for the same message) has already been pushed to the bot as a card; push-pending must NOT push it again. Cleared only if the user explicitly re-requests. */
+  pushed_at?: string;
+  pushed_message_id?: number;
 }

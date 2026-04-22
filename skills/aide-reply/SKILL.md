@@ -121,12 +121,18 @@ End with: `Saved <3N> drafts to the hub. Copy/paste the one you like into Telegr
 
 1. **Never call `send_message`** — this skill only drafts. Sending is a separate manual step.
 2. **Never invent facts** — if you don't know the answer, say "I need more info from you" rather than guessing.
-3. **Match the language of the incoming message** for the draft `text` — do not translate.
-4. **`reasoning` follows `AIDE_LANG`** — the one-sentence why-explanation is for the USER, not the counterpart. Write it in the user's preferred language (`AIDE_LANG` env var: `zh` = 中文, `en` = English, default `en`). If `AIDE_LANG=zh`, write reasoning in Chinese even when the draft itself is in English.
-5. **Redact sensitive content** — if the thread contains secrets, leave them out of the draft (don't echo API keys / seed phrases / private keys back).
-6. **If triage.priority === "ignore" or "spam"** → skip that message entirely, don't draft.
-7. **If triage.confidence < 0.5** → skip, tell the user "triage was uncertain; re-run `aide run triage` on this thread for better context."
-8. **User profile overrides style defaults** — if the calling prompt includes a `<user_profile>…</user_profile>` block, treat its "Reply voice" and "Things I do NOT want in drafts" sections as hard constraints. They trump the generic style descriptions in step 2 above. If the profile says "decisive, no pleasantries" and the user's casual samples still contain pleasantries, remove the pleasantries anyway.
+3. **Ack-first default — THE MOST IMPORTANT RULE.** Before drafting, identify what the counterpart is actually asking for:
+   - If they are **sharing info, forwarding a link, asking for review, asking for approval, or sending hype** → the default draft is a **one-sentence acknowledgement** ("好的我看下" / "收到，晚点过" / "ok 可以发" / "🔥 let's go"). NOT instructions, NOT delegation, NOT rewriting their ask.
+   - Only produce directive-heavy drafts when the counterpart **explicitly asked for a decision** ("你定一下" / "拍板" / "你觉得呢" / "which way should we go").
+   - Only include delegation (@someone please do X) when the counterpart's ask actually needs to fan out to another person. A review request does not need delegation.
+   - Style differentiation should live in **tone and warmth**, not in **how many commands the draft contains**. Professional / push / casual drafts for the SAME message should all be roughly the same LENGTH and SHAPE — just different registers of politeness.
+   - When in doubt between "ack" and "direct": choose ack for professional + casual; push can be slightly more direct but still not bossy.
+4. **Match the language of the incoming message** for the draft `text` — do not translate.
+5. **`reasoning` follows `AIDE_LANG`** — the one-sentence why-explanation is for the USER, not the counterpart. Write it in the user's preferred language (`AIDE_LANG` env var: `zh` = 中文, `en` = English, default `en`). If `AIDE_LANG=zh`, write reasoning in Chinese even when the draft itself is in English.
+6. **Redact sensitive content** — if the thread contains secrets, leave them out of the draft (don't echo API keys / seed phrases / private keys back).
+7. **If triage.priority === "ignore" or "spam"** → skip that message entirely, don't draft.
+8. **If triage.confidence < 0.5** → skip, tell the user "triage was uncertain; re-run `aide run triage` on this thread for better context."
+9. **User profile overrides style defaults** — if the calling prompt includes a `<user_profile>…</user_profile>` block, treat its "Reply voice" (especially the scenario table) and "Things I do NOT want in drafts" sections as hard constraints. They trump the generic style descriptions in step 2 above.
 
 ## Not in scope
 

@@ -52,6 +52,8 @@ const ReplyDraftSchema = z.object({
   reasoning: z.string().max(400).optional(),
   created_at: z.string(),
   sent_at: z.string().optional(),
+  pushed_at: z.string().optional(),
+  pushed_message_id: z.number().int().optional(),
 });
 
 const TaskSchema = z.object({
