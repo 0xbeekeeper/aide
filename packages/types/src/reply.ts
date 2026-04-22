@@ -6,8 +6,10 @@ export interface ReplyDraft {
   chat_id: string;
   chat_title?: string;
   sender_name?: string;
-  /** Short excerpt of the message being replied to (≤ 240 chars). */
+  /** Short excerpt of the message being replied to (≤ 240 chars), verbatim in original language. */
   source_excerpt?: string;
+  /** Localized version of source_excerpt when AIDE_LANG differs from the source language. Shown in cards. */
+  source_excerpt_display?: string;
   style: Style;
   text: string;
   confidence: number;

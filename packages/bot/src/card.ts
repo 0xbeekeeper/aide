@@ -70,8 +70,23 @@ export function renderCard(
   lines.push(
     `📩 <b>${esc(title)}</b> · ${esc(s.card_from)} <i>${esc(sender)}</i>`,
   );
-  if (selected.source_excerpt) {
-    const quoted = selected.source_excerpt
+  // If a localized display version exists (zh translation of original),
+  // use it as the primary quote and keep the original as a small subtitle.
+  const display = selected.source_excerpt_display;
+  const orig = selected.source_excerpt;
+  if (display && orig && display !== orig) {
+    const primary = display
+      .split("\n")
+      .map((l) => `<i>${esc(l)}</i>`)
+      .join("\n");
+    const origLine = orig.length > 120 ? orig.slice(0, 117) + "…" : orig;
+    lines.push(`<blockquote>${primary}</blockquote>`);
+    lines.push(
+      `<i>${esc(s.card_original_prefix)}: <code>${esc(origLine)}</code></i>`,
+    );
+  } else if (display ?? orig) {
+    const text = (display ?? orig) as string;
+    const quoted = text
       .split("\n")
       .map((l) => `<i>${esc(l)}</i>`)
       .join("\n");

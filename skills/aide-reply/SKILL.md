@@ -67,7 +67,8 @@ For each draft, call `aide-hub.save_draft` with the **full** schema below — `s
   chat_id: triage.chat_id,
   chat_title: "<human-readable chat title from the triage record>",
   sender_name: "<sender display_name from the last message in the thread>",
-  source_excerpt: "<≤240-char quote of the message being replied to (the one that triggered needs_reply)>",
+  source_excerpt: "<≤240-char quote of the message being replied to, VERBATIM in original language>",
+  source_excerpt_display: "<ONLY set when AIDE_LANG differs from the source language. Concise Chinese (if AIDE_LANG=zh) or English (if AIDE_LANG=en) rendering of the source — a faithful translation or tight paraphrase, ≤280 chars. Keep proper nouns verbatim. Do NOT set this when the source is already in AIDE_LANG.>",
   style: "professional" | "push" | "casual",
   text: "<the draft>",
   confidence: 0.0-1.0,
@@ -75,6 +76,8 @@ For each draft, call `aide-hub.save_draft` with the **full** schema below — `s
   created_at: <ISO 8601 now>
 }
 ```
+
+**`source_excerpt_display` rationale**: the user has set `AIDE_LANG` and wants to read their card UI in that language. When the incoming message is in a different language (e.g. English thread while `AIDE_LANG=zh`), the bot card will prefer the display version so the user can read the quote natively, while keeping `source_excerpt` as the verbatim original for audit.
 
 **Rules for `reasoning`**:
 - ONE sentence, ≤ 400 chars.

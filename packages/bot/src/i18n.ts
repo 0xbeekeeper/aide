@@ -5,6 +5,20 @@ export function currentLang(): Lang {
   return v === "zh" || v === "zh-cn" || v === "zh-hans" ? "zh" : "en";
 }
 
+/**
+ * Very light heuristic: does the text look like it's primarily in the
+ * currently-preferred language? Used to decide whether to auto-translate
+ * a snippet before showing.
+ */
+export function looksLikeLang(text: string, lang: Lang): boolean {
+  if (text.length === 0) return true;
+  const total = text.length;
+  const cjk = (text.match(/[\p{Script=Han}]/gu) ?? []).length;
+  const ratio = cjk / total;
+  if (lang === "zh") return ratio >= 0.15;
+  return ratio < 0.15;
+}
+
 interface Strings {
   card_from: string;
   card_triage_label: string;
@@ -12,6 +26,7 @@ interface Strings {
   card_position_of: (cur: number, total: number) => string;
   card_why_prefix: string;
   card_pending_badge: string;
+  card_original_prefix: string;
   btn_send: string;
   btn_cycle: string;
   btn_edit: string;
@@ -45,6 +60,7 @@ const EN: Strings = {
   card_position_of: (c, t) => `(${c}/${t})`,
   card_why_prefix: "why",
   card_pending_badge: "📌 Pending",
+  card_original_prefix: "Original",
   btn_send: "✅ Send",
   btn_cycle: "🔄 Next style",
   btn_edit: "📝 Edit",
@@ -81,6 +97,7 @@ const ZH: Strings = {
   card_position_of: (c, t) => `(第 ${c}/${t} 条)`,
   card_why_prefix: "思路",
   card_pending_badge: "📌 待处理",
+  card_original_prefix: "原文",
   btn_send: "✅ 发送",
   btn_cycle: "🔄 换风格",
   btn_edit: "📝 编辑",
