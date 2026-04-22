@@ -27,15 +27,16 @@ If either is missing, stop and tell the user to run `aide doctor` to diagnose.
 
 ## Workflow
 
-### Step 1. Fetch unread messages
+### Step 1. Fetch recent messages
 
 Call `aide-telegram.list_unread` with:
-- `since`: now minus 24 hours (ISO 8601)
-- `limit`: 50
+- `since`: **start of today in the user's local timezone** (ISO 8601). Compute as today's date at 00:00:00 local time. Example: if it's 2026-04-22T14:37:00+08:00 now, pass `2026-04-22T00:00:00+08:00`. Only widen the window if the user explicitly asks (e.g. "scan last 7 days").
+- `limit`: 200
+- `include_read`: **true** — scan all messages in the window regardless of Telegram's read/unread state. Telegram marks messages read as soon as the user glances at them on any device, which would hide messages the user hasn't actually processed. Always prefer `include_read: true` when applying the user-profile rubric.
 
-You will receive a `Message[]` array matching the `@aide-os/types` schema.
+The response shape is `{ filter_mode, mode, messages }` — read `messages` for the array. Messages sent by the user themselves are already filtered out of `include_read` mode, so you only see counterparts' messages.
 
-If the array is empty, tell the user "Inbox clear — nothing unread in the last 24h" and stop.
+If `messages` is empty, tell the user "Inbox clear — nothing today" (or "nothing in the window") and stop.
 
 ### Step 2. For each unread message, decide
 

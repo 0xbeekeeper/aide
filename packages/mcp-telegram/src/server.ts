@@ -41,21 +41,23 @@ export function createTelegramServer(
   server.registerTool(
     "list_unread",
     {
-      title: "List Unread Messages",
+      title: "List Unread (or recent) Messages",
       description:
-        "List unread messages across all chats. since = ISO 8601 lower bound; limit caps total returned messages.",
+        "List messages across allowed chats. By default only returns messages Telegram still marks unread. Pass include_read=true to instead scan all messages in the time window regardless of read state — useful when the user quickly glances at TG on another device but hasn't actually processed things. since = ISO 8601 lower bound; limit caps total returned messages.",
       inputSchema: {
         since: z.string().optional(),
-        limit: z.number().int().positive().max(200).optional(),
+        limit: z.number().int().positive().max(500).optional(),
+        include_read: z.boolean().optional(),
       },
     },
-    async ({ since, limit }) => {
+    async ({ since, limit, include_read }) => {
       try {
         const client = await getClient();
         const me = await client.getMe();
         const selfId = String((me as { id: unknown }).id ?? "");
         const sinceTs = since ? new Date(since).getTime() : 0;
         const cap = limit ?? 50;
+        const scanRead = include_read === true;
 
         const filter = await new FilesystemAdapter().loadChatFilter();
         const chatAllowed = (chatId: string): boolean => {
@@ -72,17 +74,27 @@ export function createTelegramServer(
 
         for (const dialog of dialogs) {
           const unread = dialog.unreadCount ?? 0;
-          if (unread <= 0) continue;
           const entity = dialog.entity;
           const entityId = String((entity as { id?: unknown } | null)?.id ?? "");
           if (!chatAllowed(entityId)) continue;
-          const msgs = await client.getMessages(entity, { limit: unread });
+
+          // Decide how many messages to pull from this chat.
+          // - Unread mode: exactly unreadCount (skip chats with 0 unread).
+          // - Scan-read mode: pull a window big enough to cover `since` →
+          //   cap at 50 per chat, then filter by time.
+          if (!scanRead && unread <= 0) continue;
+          const pullLimit = scanRead ? 50 : unread;
+
+          const msgs = await client.getMessages(entity, { limit: pullLimit });
           for (const m of msgs) {
             if (!m) continue;
             const ts = (m.date ?? 0) * 1000;
-            if (ts < sinceTs) continue;
+            if (ts < sinceTs) break; // msgs are newest-first; older → done
             const mapped = await toMessage(client, m, entity, selfId);
-            mapped.is_unread = true;
+            mapped.is_unread = scanRead ? false : true;
+            // In scan-read mode skip the user's own messages — they don't need
+            // triaging.
+            if (scanRead && mapped.sender.is_self) continue;
             out.push(mapped);
             if (out.length >= cap) break;
           }
@@ -91,6 +103,7 @@ export function createTelegramServer(
 
         return json({
           filter_mode: filter.mode,
+          mode: scanRead ? "include_read" : "unread_only",
           messages: out,
         });
       } catch (e) {

@@ -28,7 +28,7 @@ If missing, stop and tell the user to run `aide doctor`.
 ### Step 1. Define period
 
 - `period_end` = now (ISO 8601)
-- `period_start` = now − 24h
+- `period_start` = **start of today in the user's local timezone** (today 00:00 local, ISO 8601). Only widen if the user explicitly asked for a different window.
 
 ### Step 2. Fetch data
 

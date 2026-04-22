@@ -11,9 +11,9 @@ export const SKILLS: SkillSpec[] = [
   {
     name: "aide-triage",
     alias: "triage",
-    description: "Triage unread Telegram messages into priority buckets.",
+    description: "Triage today's Telegram activity in your work chats.",
     prompt:
-      "Use the aide-triage skill to triage my unread Telegram messages from the last 24 hours. Save results to the hub and print a summary.",
+      "Use the aide-triage skill to triage messages in my work chats from today (since local 00:00). Save results to the hub and print a grouped summary.",
   },
   {
     name: "aide-reply",
