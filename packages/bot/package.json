@@ -1,0 +1,35 @@
+{
+  "name": "@aide-os/bot",
+  "version": "0.0.0",
+  "description": "Telegram bot front-end for aide — pushes draft cards, handles confirm/edit/skip, executes sends via user session",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "aide-bot": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/bin.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/bin.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aide-os/mcp-telegram": "workspace:*",
+    "@aide-os/storage": "workspace:*",
+    "@aide-os/types": "workspace:*",
+    "grammy": "^1.30.0",
+    "kleur": "^4.1.5"
+  }
+}
