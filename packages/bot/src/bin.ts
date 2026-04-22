@@ -184,9 +184,11 @@ async function cmdPushPending(): Promise<number> {
     return 1;
   }
   const bot = new Bot(cfg.bot_token);
-  const { pushed, skipped } = await pushAllPending(bot);
+  const { pushed, skipped, auto_resolved } = await pushAllPending(bot);
   console.log(
-    kleur.green(`✓ pushed ${pushed} card(s); skipped ${skipped}.`),
+    kleur.green(
+      `✓ pushed ${pushed} card(s); skipped ${skipped}; auto-resolved ${auto_resolved} (already replied).`,
+    ),
   );
   return 0;
 }

@@ -43,14 +43,15 @@ export function createTelegramServer(
     {
       title: "List Unread (or recent) Messages",
       description:
-        "List messages across allowed chats. By default only returns messages Telegram still marks unread. Pass include_read=true to instead scan all messages in the time window regardless of read state — useful when the user quickly glances at TG on another device but hasn't actually processed things. since = ISO 8601 lower bound; limit caps total returned messages.",
+        "List messages across allowed chats. By default only returns messages Telegram still marks unread. Pass include_read=true to instead scan all messages in the time window regardless of read state. Pass skip_if_replied=true to additionally drop any message the user has already replied to (self sent a later message in the same chat). since = ISO 8601 lower bound.",
       inputSchema: {
         since: z.string().optional(),
         limit: z.number().int().positive().max(500).optional(),
         include_read: z.boolean().optional(),
+        skip_if_replied: z.boolean().optional(),
       },
     },
-    async ({ since, limit, include_read }) => {
+    async ({ since, limit, include_read, skip_if_replied }) => {
       try {
         const client = await getClient();
         const me = await client.getMe();
@@ -58,6 +59,7 @@ export function createTelegramServer(
         const sinceTs = since ? new Date(since).getTime() : 0;
         const cap = limit ?? 50;
         const scanRead = include_read === true;
+        const skipReplied = skip_if_replied === true;
 
         const filter = await new FilesystemAdapter().loadChatFilter();
         const chatAllowed = (chatId: string): boolean => {
@@ -71,6 +73,7 @@ export function createTelegramServer(
 
         const dialogs = await client.getDialogs({ limit: 100 });
         const out: Message[] = [];
+        let droppedReplied = 0;
 
         for (const dialog of dialogs) {
           const unread = dialog.unreadCount ?? 0;
@@ -78,23 +81,33 @@ export function createTelegramServer(
           const entityId = String((entity as { id?: unknown } | null)?.id ?? "");
           if (!chatAllowed(entityId)) continue;
 
-          // Decide how many messages to pull from this chat.
-          // - Unread mode: exactly unreadCount (skip chats with 0 unread).
-          // - Scan-read mode: pull a window big enough to cover `since` →
-          //   cap at 50 per chat, then filter by time.
           if (!scanRead && unread <= 0) continue;
           const pullLimit = scanRead ? 50 : unread;
 
           const msgs = await client.getMessages(entity, { limit: pullLimit });
+          // msgs are newest-first. Walk them once and track whether the user
+          // has already sent a reply AFTER the candidate message.
+          let seenSelfAfter = false;
           for (const m of msgs) {
             if (!m) continue;
+            const senderIsSelf =
+              m.senderId !== undefined &&
+              m.senderId !== null &&
+              String(m.senderId) === selfId;
             const ts = (m.date ?? 0) * 1000;
-            if (ts < sinceTs) break; // msgs are newest-first; older → done
+            if (senderIsSelf) {
+              // Since we iterate newest→oldest, a self message now means the
+              // user has replied to anything older in this chat.
+              seenSelfAfter = true;
+              continue; // never emit self messages
+            }
+            if (ts < sinceTs) break;
+            if (skipReplied && seenSelfAfter) {
+              droppedReplied++;
+              continue;
+            }
             const mapped = await toMessage(client, m, entity, selfId);
             mapped.is_unread = scanRead ? false : true;
-            // In scan-read mode skip the user's own messages — they don't need
-            // triaging.
-            if (scanRead && mapped.sender.is_self) continue;
             out.push(mapped);
             if (out.length >= cap) break;
           }
@@ -104,6 +117,7 @@ export function createTelegramServer(
         return json({
           filter_mode: filter.mode,
           mode: scanRead ? "include_read" : "unread_only",
+          dropped_already_replied: droppedReplied,
           messages: out,
         });
       } catch (e) {

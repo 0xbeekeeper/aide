@@ -8,6 +8,7 @@ import {
 } from "../runtime.js";
 import { SKILLS, findSkill } from "../skills.js";
 import { enrichWithProfile } from "../profile.js";
+import { readState, writeState } from "../state.js";
 
 export interface RunOptions {
   runtime?: Runtime;
@@ -39,12 +40,36 @@ export async function runCommand(
   applyEnvToProcess(env);
 
   const runtime = opts.runtime ?? detectRuntime();
-  const prompt = await enrichWithProfile(skill.prompt);
+  let prompt = await enrichWithProfile(skill.prompt);
+
+  // For triage specifically, inject the watermark so we only scan new messages
+  // since the last successful run (or midnight, whichever is later).
+  if (skill.name === "aide-triage") {
+    const state = await readState();
+    if (state.last_triage_at) {
+      prompt =
+        `Incremental scan: the last triage run finished at ${state.last_triage_at}. ` +
+        `Pass since = max(start of today local, ${state.last_triage_at}) to list_unread. ` +
+        `Also pass skip_if_replied=true so messages you've already replied to are dropped.\n\n` +
+        prompt;
+    } else {
+      prompt =
+        `First triage run on this machine. Scan since start of today (local 00:00). ` +
+        `Pass skip_if_replied=true so messages you've already replied to are dropped.\n\n` +
+        prompt;
+    }
+  }
 
   console.log(kleur.dim(`▶ running ${skill.name} via ${runtime}`));
 
   if (runtime === "claude-code") {
-    return await runClaudeCode(prompt);
+    const code = await runClaudeCode(prompt);
+    if (code === 0 && skill.name === "aide-triage") {
+      const state = await readState();
+      state.last_triage_at = new Date().toISOString();
+      await writeState(state);
+    }
+    return code;
   }
   if (runtime === "openclaw") {
     console.error(
