@@ -41,9 +41,13 @@ const ReplyDraftSchema = z.object({
   id: z.string(),
   message_id: z.string(),
   chat_id: z.string(),
+  chat_title: z.string().optional(),
+  sender_name: z.string().optional(),
+  source_excerpt: z.string().max(240).optional(),
   style: StyleSchema,
   text: z.string(),
   confidence: z.number().min(0).max(1),
+  reasoning: z.string().max(400).optional(),
   created_at: z.string(),
   sent_at: z.string().optional(),
 });

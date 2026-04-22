@@ -58,19 +58,30 @@ For each `Triage` record:
 
 ### Step 4. Save drafts to hub
 
-For each draft, call `aide-hub.save_draft` with:
+For each draft, call `aide-hub.save_draft` with the **full** schema below — `source_excerpt` and `reasoning` are **required** for auditability. The user reviews drafts via `aide drafts` and must be able to verify the AI understood the thread before copying a draft into Telegram.
 
 ```ts
 {
   id: `${message_id}-${style}-${timestamp}`,  // e.g. "12345-professional-2026-04-22T..."
   message_id: triage.message_id,
   chat_id: triage.chat_id,
+  chat_title: "<human-readable chat title from the triage record>",
+  sender_name: "<sender display_name from the last message in the thread>",
+  source_excerpt: "<≤240-char quote of the message being replied to (the one that triggered needs_reply)>",
   style: "professional" | "push" | "casual",
   text: "<the draft>",
   confidence: 0.0-1.0,
+  reasoning: "<ONE sentence explaining why this draft reads this way given the thread context; e.g. 'user asked ETA, I committed to Tuesday because thread shows Mike confirmed Tuesday is feasible' — write it like you're defending the draft in a review>",
   created_at: <ISO 8601 now>
 }
 ```
+
+**Rules for `reasoning`**:
+- ONE sentence, ≤ 400 chars.
+- Reference what you understood from the thread ("user asked X given Y context").
+- If you made a judgment call, state it ("assumed they want it by Friday based on the deadline mentioned earlier").
+- If confidence is < 0.8, explicitly note what you were uncertain about.
+- This is the user's hallucination-detector — write honestly.
 
 ### Step 5. Summary to user
 

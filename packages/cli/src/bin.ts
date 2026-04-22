@@ -12,6 +12,11 @@ import {
   chatsResetCommand,
   chatsModeCommand,
 } from "./commands/chats.js";
+import {
+  draftsListCommand,
+  draftsShowCommand,
+  draftsMarkSentCommand,
+} from "./commands/drafts.js";
 import type { Runtime } from "./runtime.js";
 
 const program = new Command();
@@ -82,6 +87,33 @@ chats
   .command("mode <mode>")
   .description("set filter mode: whitelist | blacklist | off")
   .action(async (mode: string) => process.exit(await chatsModeCommand(mode)));
+
+const drafts = program
+  .command("drafts")
+  .description("review reply drafts before copying them into Telegram");
+
+drafts
+  .command("list", { isDefault: true })
+  .description("list pending drafts with source + reasoning")
+  .option("-a, --all", "include drafts already marked as sent")
+  .option("-v, --verbose", "show the 'why' reasoning under each draft")
+  .action(async (opts: { all?: boolean; verbose?: boolean }) =>
+    process.exit(await draftsListCommand(opts)),
+  );
+
+drafts
+  .command("show <messageId>")
+  .description("show all drafts for one message_id with full reasoning")
+  .action(async (messageId: string) =>
+    process.exit(await draftsShowCommand(messageId)),
+  );
+
+drafts
+  .command("mark-sent <draftId>")
+  .description("mark a draft as sent (records timestamp)")
+  .action(async (draftId: string) =>
+    process.exit(await draftsMarkSentCommand(draftId)),
+  );
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);
