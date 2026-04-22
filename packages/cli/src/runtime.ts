@@ -20,11 +20,16 @@ function which(bin: string): string | null {
 }
 
 export async function runClaudeCode(prompt: string): Promise<number> {
+  // bypassPermissions is required for non-interactive runs — without it,
+  // unapproved MCP tool calls block forever waiting on a permission prompt
+  // that stdin can't answer. Since aide's MCPs are all user-installed and
+  // trusted, granting them blanket permission is safe at the CLI boundary.
   return new Promise((resolve) => {
-    const child = spawn("claude", ["-p", prompt], {
-      stdio: "inherit",
-      env: process.env,
-    });
+    const child = spawn(
+      "claude",
+      ["-p", "--permission-mode", "bypassPermissions", prompt],
+      { stdio: "inherit", env: process.env },
+    );
     child.on("exit", (code) => resolve(code ?? 0));
     child.on("error", (err) => {
       console.error("failed to spawn claude:", err);

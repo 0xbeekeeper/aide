@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getClient } from "./client.js";
+import { getClient, resolveEntity } from "./client.js";
 import { toChat, toMessage } from "./map.js";
 import type { Chat, Message } from "@aide-os/types";
 import { FilesystemAdapter } from "@aide-os/storage";
@@ -267,23 +267,63 @@ export function createTelegramServer(
     {
       title: "Get Chat Context",
       description:
-        "Get the last N messages in a specific chat (newest first). chat_id is the Telegram peer id as a string.",
+        "Fetch conversation context from a specific chat. If anchor_message_id is provided, returns the messages immediately surrounding it (default: 8 before + the anchor + 2 after). Otherwise returns the last N messages in the chat (newest first). chat_id is the Telegram peer id as a string. Prefer passing an anchor when reviewing a stale card — it avoids drifting off-topic when newer unrelated messages have arrived.",
       inputSchema: {
         chat_id: z.string(),
         n: z.number().int().positive().max(100).default(10),
+        anchor_message_id: z.string().optional(),
+        before: z.number().int().nonnegative().max(50).optional(),
+        after: z.number().int().nonnegative().max(50).optional(),
       },
     },
-    async ({ chat_id, n }) => {
+    async ({ chat_id, n, anchor_message_id, before, after }) => {
       try {
         const client = await getClient();
         const me = await client.getMe();
         const selfId = String((me as { id: unknown }).id ?? "");
-        const entity = await client.getEntity(chat_id);
-        const msgs = await client.getMessages(entity, { limit: n });
+        const entity = await resolveEntity(client, chat_id);
         const out: Message[] = [];
-        for (const m of msgs) {
-          if (!m) continue;
-          out.push(await toMessage(client, m, entity, selfId));
+
+        if (anchor_message_id) {
+          const anchor = Number(anchor_message_id);
+          const b = before ?? 8;
+          const a = after ?? 2;
+          // Fetch `before` messages whose id < anchor.
+          const beforeMsgs =
+            b > 0
+              ? await client.getMessages(entity, {
+                  limit: b,
+                  offsetId: anchor,
+                })
+              : [];
+          // Fetch `after` messages whose id > anchor.
+          const afterMsgs =
+            a > 0
+              ? await client.getMessages(entity, {
+                  limit: a,
+                  minId: anchor,
+                })
+              : [];
+          // Fetch the anchor message itself.
+          const anchorMsgs = await client.getMessages(entity, {
+            ids: [anchor],
+          });
+          // Assemble chronological: before (older → newer), anchor, after.
+          const ordered = [
+            ...[...beforeMsgs].reverse(),
+            ...anchorMsgs,
+            ...[...afterMsgs].reverse(),
+          ];
+          for (const m of ordered) {
+            if (!m) continue;
+            out.push(await toMessage(client, m, entity, selfId));
+          }
+        } else {
+          const msgs = await client.getMessages(entity, { limit: n });
+          for (const m of msgs) {
+            if (!m) continue;
+            out.push(await toMessage(client, m, entity, selfId));
+          }
         }
         return json(out);
       } catch (e) {
@@ -313,7 +353,7 @@ export function createTelegramServer(
         const sinceTs = since ? new Date(since).getTime() : 0;
 
         const targets = chat_id
-          ? [await client.getEntity(chat_id)]
+          ? [await resolveEntity(client, chat_id)]
           : (await client.getDialogs({ limit: 50 })).map((d) => d.entity);
 
         const out: Message[] = [];
@@ -362,7 +402,7 @@ export function createTelegramServer(
             );
           }
           const client = await getClient();
-          const entity = await client.getEntity(chat_id);
+          const entity = await resolveEntity(client, chat_id);
           const opts: Parameters<typeof client.sendMessage>[1] = {
             message: text,
           };

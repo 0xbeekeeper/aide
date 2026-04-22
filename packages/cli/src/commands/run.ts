@@ -9,6 +9,7 @@ import {
 import { SKILLS, findSkill } from "../skills.js";
 import { enrichWithProfile } from "../profile.js";
 import { readState, writeState } from "../state.js";
+import { pushLatestBrief } from "@aide-os/bot";
 
 export interface RunOptions {
   runtime?: Runtime;
@@ -68,6 +69,31 @@ export async function runCommand(
       const state = await readState();
       state.last_triage_at = new Date().toISOString();
       await writeState(state);
+
+      // Chain aide-task so commitments / asks / deadlines get captured
+      // alongside triage without a separate cron job.
+      const taskSkill = findSkill("task");
+      if (taskSkill) {
+        console.log(kleur.dim(`▶ chaining ${taskSkill.name}`));
+        const taskPrompt = await enrichWithProfile(taskSkill.prompt);
+        await runClaudeCode(taskPrompt);
+      }
+    }
+    if (code === 0 && skill.name === "aide-brief") {
+      // Push the freshly-generated brief to the bot so the owner sees it
+      // without opening a terminal.
+      try {
+        const sent = await pushLatestBrief();
+        if (sent) {
+          console.log(kleur.dim("▶ brief pushed to bot"));
+        }
+      } catch (e) {
+        console.error(
+          kleur.yellow(
+            `brief push failed: ${e instanceof Error ? e.message : String(e)}`,
+          ),
+        );
+      }
     }
     return code;
   }

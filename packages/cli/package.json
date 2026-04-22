@@ -20,6 +20,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@aide-os/bot": "workspace:*",
     "@aide-os/mcp-hub": "workspace:*",
     "@aide-os/mcp-telegram": "workspace:*",
     "@aide-os/storage": "workspace:*",

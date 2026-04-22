@@ -38,6 +38,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@aide-os/bot':
+        specifier: workspace:*
+        version: link:../bot
       '@aide-os/mcp-hub':
         specifier: workspace:*
         version: link:../mcp-hub

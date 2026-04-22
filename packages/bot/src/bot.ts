@@ -3,7 +3,7 @@ import { FilesystemAdapter } from "@aide-os/storage";
 import type { ReplyDraft } from "@aide-os/types";
 import { cardKeyboard, decodeCallback, renderCard } from "./card.js";
 import { readConfig } from "./config.js";
-import { getClient } from "@aide-os/mcp-telegram";
+import { getClient, resolveEntity } from "@aide-os/mcp-telegram";
 import { t } from "./i18n.js";
 
 interface CreateBotOptions {
@@ -49,8 +49,102 @@ export function createBot(opts: CreateBotOptions): Bot {
     await ctx.reply(n === 0 ? t().pending_none : t().pending_count(n));
   });
 
+  bot.command("tasks", async (ctx) => {
+    const tasks = await storage.listTasks({ status: "open" });
+    const now = Date.now();
+    const active = tasks.filter((tk) => {
+      if (!tk.snoozed_until) return true;
+      return new Date(tk.snoozed_until).getTime() <= now;
+    });
+    if (active.length === 0) {
+      await ctx.reply(t().tasks_none);
+      return;
+    }
+    const s = t();
+    await ctx.reply(`<b>${esc(s.tasks_header(active.length))}</b>`, {
+      parse_mode: "HTML",
+    });
+    for (const tk of active.slice(0, 20)) {
+      const line = s.task_line(
+        tk.action,
+        tk.owner ?? "?",
+        tk.deadline ?? null,
+      );
+      await ctx.reply(line, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: s.btn_task_done,
+                callback_data: `aide-t:done:${tk.id}`,
+              },
+              {
+                text: s.btn_task_snooze,
+                callback_data: `aide-t:snooze:${tk.id}`,
+              },
+              {
+                text: s.btn_task_drop,
+                callback_data: `aide-t:drop:${tk.id}`,
+              },
+            ],
+          ],
+        },
+      });
+    }
+  });
+
   bot.on("callback_query:data", async (ctx) => {
     const data = ctx.callbackQuery.data;
+
+    // Task action callbacks (prefix aide-t:)
+    if (data.startsWith("aide-t:")) {
+      const parts = data.split(":");
+      const action = parts[1];
+      const taskId = parts.slice(2).join(":");
+      const s = t();
+      if (!taskId) {
+        await ctx.answerCallbackQuery({ text: s.task_not_found });
+        return;
+      }
+      const allTasks = await storage.listTasks({});
+      const task = allTasks.find((x) => x.id === taskId);
+      if (!task) {
+        await ctx.answerCallbackQuery({ text: s.task_not_found });
+        return;
+      }
+      if (action === "done") {
+        await storage.updateTaskStatus(taskId, "done");
+        await ctx.editMessageText(
+          `✅ <s>${esc(task.action)}</s>`,
+          { parse_mode: "HTML" },
+        );
+        await ctx.answerCallbackQuery({ text: s.task_done_toast });
+        return;
+      }
+      if (action === "drop") {
+        await storage.updateTaskStatus(taskId, "dropped");
+        await ctx.editMessageText(
+          `🗑 <s>${esc(task.action)}</s>`,
+          { parse_mode: "HTML" },
+        );
+        await ctx.answerCallbackQuery({ text: s.task_drop_toast });
+        return;
+      }
+      if (action === "snooze") {
+        const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await storage.saveTask({ ...task, snoozed_until: until });
+        await ctx.editMessageText(
+          `⏰ ${esc(task.action)}  <i>(snoozed → ${esc(until.slice(0, 16))})</i>`,
+          { parse_mode: "HTML" },
+        );
+        await ctx.answerCallbackQuery({ text: s.task_snooze_toast });
+        return;
+      }
+      await ctx.answerCallbackQuery({ text: "unknown task action" });
+      return;
+    }
+
+    // Draft card callbacks (prefix aide:)
     const decoded = decodeCallback(data);
     if (!decoded) {
       await ctx.answerCallbackQuery({ text: "unrecognized action" });
@@ -110,10 +204,30 @@ export function createBot(opts: CreateBotOptions): Bot {
       await ctx.answerCallbackQuery({ text: s.context_fetching });
       try {
         const client = await getClient();
-        const entity = await client.getEntity(selected.chat_id);
-        const msgs = await client.getMessages(entity, { limit: 10 });
+        const entity = await resolveEntity(client, selected.chat_id);
         const me = await client.getMe();
         const selfId = String((me as { id: unknown }).id ?? "");
+
+        // Anchor around the triaged message so context is topical to the
+        // card, not the current tail of the chat.
+        const anchor = Number(selected.message_id);
+        const beforeMsgs = Number.isFinite(anchor)
+          ? await client.getMessages(entity, { limit: 8, offsetId: anchor })
+          : [];
+        const afterMsgs = Number.isFinite(anchor)
+          ? await client.getMessages(entity, { limit: 2, minId: anchor })
+          : [];
+        const anchorMsgs = Number.isFinite(anchor)
+          ? await client.getMessages(entity, { ids: [anchor] })
+          : [];
+        const msgs = Number.isFinite(anchor)
+          ? [
+              ...[...beforeMsgs],
+              ...anchorMsgs,
+              ...[...afterMsgs].reverse(),
+            ].reverse()
+          : await client.getMessages(entity, { limit: 10 });
+
         const lines: string[] = [`<b>${esc(s.context_header(msgs.length))}</b>`];
         // msgs are newest first; show oldest→newest for reading flow
         for (const m of [...msgs].reverse()) {
@@ -251,7 +365,7 @@ async function sendAsUser(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const client = await getClient();
-    const entity = await client.getEntity(chatId);
+    const entity = await resolveEntity(client, chatId);
     await client.sendMessage(entity, { message: text });
     return { ok: true };
   } catch (e) {

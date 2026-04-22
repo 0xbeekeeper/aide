@@ -63,6 +63,7 @@ const TaskSchema = z.object({
   status: TaskStatusSchema,
   confidence: z.number().min(0).max(1),
   created_at: z.string(),
+  snoozed_until: z.string().optional(),
   notion_page_id: z.string().optional(),
 });
 

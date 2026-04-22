@@ -38,7 +38,7 @@ In parallel if the host supports it:
    - `need_reply` = triage where `needs_reply === true` AND `priority !== "ignore"`
    - `fyi` = everything else whose `priority` is not `ignore` or `spam`
 
-2. `hub.list_tasks` with `status: "open"` → `open_tasks`
+2. `hub.list_tasks` with `status: "open"` → `open_tasks`. Filter out any task whose `snoozed_until` is in the future — the user has explicitly asked to delay those. A task with no `snoozed_until`, or one whose `snoozed_until` has passed, counts as currently open.
 
 ### Step 3. Build the markdown brief
 

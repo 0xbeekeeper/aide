@@ -10,5 +10,7 @@ export interface Task {
   status: TaskStatus;
   confidence: number;
   created_at: string;
+  /** When set, bot's /tasks list should hide this until now >= snoozed_until. */
+  snoozed_until?: string;
   notion_page_id?: string;
 }

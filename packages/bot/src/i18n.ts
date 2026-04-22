@@ -51,6 +51,16 @@ interface Strings {
   draft_gone: string;
   pending_count: (n: number) => string;
   pending_none: string;
+  tasks_header: (n: number) => string;
+  tasks_none: string;
+  task_line: (action: string, owner: string, deadline: string | null) => string;
+  btn_task_done: string;
+  btn_task_snooze: string;
+  btn_task_drop: string;
+  task_done_toast: string;
+  task_snooze_toast: string;
+  task_drop_toast: string;
+  task_not_found: string;
 }
 
 const EN: Strings = {
@@ -77,7 +87,7 @@ const EN: Strings = {
   sent_via_edit_label: "Sent (edited)",
   failed_prefix: "Failed",
   start_greeting:
-    "✓ aide bot is online.\n\nI'll push reply-draft cards here. On each card:\n  ✅ Send       — I send your selected draft as you\n  🔄 Next style — show the next candidate draft\n  📝 Edit       — you type a replacement; I send that\n  ⏭️ Skip       — drop the card without sending\n\n/pending — how many cards are still waiting for you",
+    "✓ aide bot is online.\n\nI'll push reply-draft cards here. On each card:\n  ✅ Send       — I send your selected draft as you\n  🔄 Next style — show the next candidate draft\n  📝 Edit       — you type a replacement; I send that\n  ⏭️ Skip       — drop the card without sending\n\nCommands:\n/pending — how many cards are still waiting for you\n/tasks   — show open tasks with action buttons",
   not_owner:
     "This bot is privately configured for its owner. You are not its owner — aborting.",
   cycle_toast: (style) => `→ ${style}`,
@@ -88,6 +98,19 @@ const EN: Strings = {
   draft_gone: "draft no longer exists — aborted.",
   pending_count: (n) => `📌 ${n} pending card(s).`,
   pending_none: "✅ Nothing pending.",
+  tasks_header: (n) => `✅ Open tasks (${n}):`,
+  tasks_none: "No open tasks.",
+  task_line: (action, owner, deadline) =>
+    deadline
+      ? `• ${action} — ${owner} — due ${deadline}`
+      : `• ${action} — ${owner}`,
+  btn_task_done: "✅ Done",
+  btn_task_snooze: "⏰ Snooze 24h",
+  btn_task_drop: "🗑 Drop",
+  task_done_toast: "marked done",
+  task_snooze_toast: "snoozed 24h",
+  task_drop_toast: "dropped",
+  task_not_found: "task not found",
 };
 
 const ZH: Strings = {
@@ -114,7 +137,7 @@ const ZH: Strings = {
   sent_via_edit_label: "已发送（编辑版）",
   failed_prefix: "发送失败",
   start_greeting:
-    "✓ aide bot 已上线。\n\n我会把回复草稿以卡片形式推给你。每张卡片上：\n  ✅ 发送     — 用你的身份把草稿发给对方\n  🔄 换风格   — 切换到下一条候选草稿\n  📝 编辑     — 你打字替换草稿，由我发送\n  ⏭️ 跳过     — 不发，关掉卡片\n\n/pending — 查看还剩几张待处理卡片",
+    "✓ aide bot 已上线。\n\n我会把回复草稿以卡片形式推给你。每张卡片上：\n  ✅ 发送     — 用你的身份把草稿发给对方\n  🔄 换风格   — 切换到下一条候选草稿\n  📝 编辑     — 你打字替换草稿，由我发送\n  ⏭️ 跳过     — 不发，关掉卡片\n\n命令：\n/pending — 查看还剩几张待处理卡片\n/tasks   — 查看待办任务（可点按钮完成/推迟/丢弃）",
   not_owner:
     "此 bot 仅对其 owner 开放。你不是 owner，已终止。",
   cycle_toast: (style) => `→ ${style}`,
@@ -125,6 +148,19 @@ const ZH: Strings = {
   draft_gone: "草稿已不存在，已取消。",
   pending_count: (n) => `📌 还有 ${n} 张待处理卡片。`,
   pending_none: "✅ 没有待处理的卡片。",
+  tasks_header: (n) => `✅ 待办任务（${n}）：`,
+  tasks_none: "当前没有待办任务。",
+  task_line: (action, owner, deadline) =>
+    deadline
+      ? `• ${action} — ${owner} — 截止 ${deadline}`
+      : `• ${action} — ${owner}`,
+  btn_task_done: "✅ 完成",
+  btn_task_snooze: "⏰ 推迟 24h",
+  btn_task_drop: "🗑 丢弃",
+  task_done_toast: "已标完成",
+  task_snooze_toast: "已推迟 24h",
+  task_drop_toast: "已丢弃",
+  task_not_found: "任务不存在",
 };
 
 export function t(): Strings {

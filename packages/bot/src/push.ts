@@ -3,7 +3,7 @@ import { FilesystemAdapter } from "@aide-os/storage";
 import type { ReplyDraft } from "@aide-os/types";
 import { cardKeyboard, renderCard } from "./card.js";
 import { readConfig } from "./config.js";
-import { getClient } from "@aide-os/mcp-telegram";
+import { getClient, resolveEntity } from "@aide-os/mcp-telegram";
 
 /**
  * Push a single draft card to the bot owner. Returns the message_id on TG side
@@ -44,7 +44,7 @@ async function autoSyncIfReplied(
 ): Promise<boolean> {
   try {
     const client = await getClient();
-    const entity = await client.getEntity(chatId);
+    const entity = await resolveEntity(client, chatId);
     const me = await client.getMe();
     const selfId = String((me as { id: unknown }).id ?? "");
 
