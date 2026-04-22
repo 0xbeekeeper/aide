@@ -68,7 +68,7 @@ For each draft, call `aide-hub.save_draft` with the **full** schema below — `s
   chat_title: "<human-readable chat title from the triage record>",
   sender_name: "<sender display_name from the last message in the thread>",
   source_excerpt: "<≤240-char quote of the message being replied to, VERBATIM in original language>",
-  source_excerpt_display: "<ONLY set when AIDE_LANG differs from the source language. Concise Chinese (if AIDE_LANG=zh) or English (if AIDE_LANG=en) rendering of the source — a faithful translation or tight paraphrase, ≤280 chars. Keep proper nouns verbatim. Do NOT set this when the source is already in AIDE_LANG.>",
+  source_excerpt_display: "<ALWAYS set this when AIDE_LANG is set. It is the user's reading version of what the counterpart said. If AIDE_LANG=zh, write in Chinese (translate faithfully if source was English; lightly polish if already Chinese; ≤280 chars). If AIDE_LANG=en, write in English. Keep proper nouns / usernames / product names verbatim. Strip decorative marks but keep meaning. This field is what the bot card shows — it IS the main quote the user reads.>",
   style: "professional" | "push" | "casual",
   text: "<the draft>",
   confidence: 0.0-1.0,
@@ -77,7 +77,7 @@ For each draft, call `aide-hub.save_draft` with the **full** schema below — `s
 }
 ```
 
-**`source_excerpt_display` rationale**: the user has set `AIDE_LANG` and wants to read their card UI in that language. When the incoming message is in a different language (e.g. English thread while `AIDE_LANG=zh`), the bot card will prefer the display version so the user can read the quote natively, while keeping `source_excerpt` as the verbatim original for audit.
+**`source_excerpt_display` rationale**: the card UI shows ONLY this field. The verbatim `source_excerpt` is kept for audit but isn't displayed. Write `source_excerpt_display` as the **clearest possible one-paragraph rendering** of what the counterpart said — if the source was long/rambling, tighten it; if it was in another language, translate. Always in the user's `AIDE_LANG`.
 
 **Rules for `reasoning`**:
 - ONE sentence, ≤ 400 chars.

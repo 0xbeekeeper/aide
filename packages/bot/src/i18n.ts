@@ -27,6 +27,10 @@ interface Strings {
   card_why_prefix: string;
   card_pending_badge: string;
   card_original_prefix: string;
+  card_header_private: (sender: string) => string;
+  card_header_group: (sender: string, chat: string) => string;
+  card_said_label: string;
+  suggested_reply_label: (style: string) => string;
   btn_send: string;
   btn_cycle: string;
   btn_edit: string;
@@ -71,6 +75,19 @@ const EN: Strings = {
   card_why_prefix: "why",
   card_pending_badge: "📌 Pending",
   card_original_prefix: "Original",
+  card_header_private: (sender: string) => `<b>${sender}</b>  ·  DM`,
+  card_header_group: (sender: string, chat: string) =>
+    `<b>${sender}</b>  ·  ${chat}`,
+  card_said_label: "Said",
+  suggested_reply_label: (style: string) => {
+    const label =
+      style === "professional"
+        ? "formal"
+        : style === "push"
+          ? "direct"
+          : "casual";
+    return `Suggested reply (${label})`;
+  },
   btn_send: "✅ Send",
   btn_cycle: "🔄 Next style",
   btn_edit: "📝 Edit",
@@ -121,6 +138,14 @@ const ZH: Strings = {
   card_why_prefix: "思路",
   card_pending_badge: "📌 待处理",
   card_original_prefix: "原文",
+  card_header_private: (sender) => `<b>${sender}</b>  ·  私信`,
+  card_header_group: (sender, chat) => `<b>${sender}</b>  ·  ${chat}`,
+  card_said_label: "对方说",
+  suggested_reply_label: (style) => {
+    const label =
+      style === "professional" ? "专业" : style === "push" ? "直接" : "随意";
+    return `建议回复（${label}）`;
+  },
   btn_send: "✅ 发送",
   btn_cycle: "🔄 换风格",
   btn_edit: "📝 编辑",

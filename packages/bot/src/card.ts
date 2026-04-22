@@ -37,18 +37,6 @@ export interface CardPayload {
   triage?: Triage;
 }
 
-function styleEmoji(style: ReplyDraft["style"]): string {
-  if (style === "professional") return "💼";
-  if (style === "push") return "🔥";
-  return "💬";
-}
-
-function confDot(c: number): string {
-  if (c >= 0.85) return "🟢";
-  if (c >= 0.6) return "🟡";
-  return "🔴";
-}
-
 function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -56,57 +44,55 @@ function esc(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
-/** Render a card body in HTML (grammY supports parse_mode=HTML). */
+/**
+ * Heuristic: is this chat a private DM (not a group/channel)?
+ * We don't always have triage handy at render time, so fall back to a
+ * title keyword check — Chinese group chats almost always include 群 or 组
+ * or English team words; private chats read like personal names.
+ */
+function isPrivateChat(chatTitle: string): boolean {
+  if (!chatTitle) return false;
+  const lower = chatTitle.toLowerCase();
+  if (/群|组|team|group|channel|小分队|project|chat/.test(lower)) return false;
+  if (/《|》|\(|\)/.test(chatTitle)) return false;
+  return true;
+}
+
+/**
+ * Minimal 3-section card: WHO said WHAT + suggested reply.
+ * No priority, no confidence numbers, no position counter, no reasoning.
+ * Chinese when AIDE_LANG=zh, via source_excerpt_display.
+ */
 export function renderCard(
   selected: ReplyDraft,
-  triage: Triage | undefined,
-  allDrafts: ReplyDraft[],
+  _triage: Triage | undefined,
+  _allDrafts: ReplyDraft[],
 ): string {
   const s = t();
   const lines: string[] = [];
-  lines.push(`<b>${esc(s.card_pending_badge)}</b>`);
-  const title = selected.chat_title ?? `chat ${selected.chat_id}`;
+
+  // Header: sender + where
+  const title = selected.chat_title ?? "";
   const sender = selected.sender_name ?? "?";
-  lines.push(
-    `📩 <b>${esc(title)}</b> · ${esc(s.card_from)} <i>${esc(sender)}</i>`,
-  );
-  // If a localized display version exists (zh translation of original),
-  // use it as the primary quote and keep the original as a small subtitle.
-  const display = selected.source_excerpt_display;
-  const orig = selected.source_excerpt;
-  if (display && orig && display !== orig) {
-    const primary = display
-      .split("\n")
-      .map((l) => `<i>${esc(l)}</i>`)
-      .join("\n");
-    const origLine = orig.length > 120 ? orig.slice(0, 117) + "…" : orig;
-    lines.push(`<blockquote>${primary}</blockquote>`);
-    lines.push(
-      `<i>${esc(s.card_original_prefix)}: <code>${esc(origLine)}</code></i>`,
-    );
-  } else if (display ?? orig) {
-    const text = (display ?? orig) as string;
-    const quoted = text
-      .split("\n")
-      .map((l) => `<i>${esc(l)}</i>`)
-      .join("\n");
-    lines.push(`<blockquote>${quoted}</blockquote>`);
+  if (isPrivateChat(title)) {
+    lines.push(s.card_header_private(esc(sender)));
+  } else {
+    lines.push(s.card_header_group(esc(sender), esc(title)));
   }
-  if (triage) {
-    lines.push(
-      `🧠 ${esc(triage.priority)} / ${esc(triage.intent)}  ${esc(s.card_confidence)} ${triage.confidence.toFixed(2)}`,
-    );
+
+  // What they said — prefer the localized display, else verbatim source
+  const quote = selected.source_excerpt_display ?? selected.source_excerpt;
+  if (quote) {
+    lines.push("");
+    lines.push(`<b>${esc(s.card_said_label)}</b>`);
+    lines.push(`<blockquote>${esc(quote)}</blockquote>`);
   }
+
+  // Suggested reply
   lines.push("");
-  const idx = allDrafts.findIndex((d) => d.id === selected.id);
-  const pos = idx === -1 ? 1 : idx + 1;
-  lines.push(
-    `${styleEmoji(selected.style)} <b>${selected.style.toUpperCase()}</b>  ${confDot(selected.confidence)} <code>${selected.confidence.toFixed(2)}</code>  <i>${esc(s.card_position_of(pos, allDrafts.length))}</i>`,
-  );
+  lines.push(`<b>${esc(s.suggested_reply_label(selected.style))}</b>`);
   lines.push(`<pre>${esc(selected.text)}</pre>`);
-  if (selected.reasoning) {
-    lines.push(`<i>${esc(s.card_why_prefix)}: ${esc(selected.reasoning)}</i>`);
-  }
+
   return lines.join("\n");
 }
 
