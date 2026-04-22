@@ -52,26 +52,25 @@ Confirm Claude Code discovers them next session — they'll appear in the skill 
 
 ## 4. Configure MCP servers
 
-Add to `~/.claude/settings.json` (merge with any existing `mcpServers`):
+Use `claude mcp add` to register the two servers in user scope so they're available from any directory:
 
-```json
-{
-  "mcpServers": {
-    "aide-hub": {
-      "command": "aide-mcp-hub"
-    },
-    "aide-telegram": {
-      "command": "aide-mcp-telegram",
-      "env": {
-        "TG_API_ID": "<your api id>",
-        "TG_API_HASH": "<your api hash>"
-      }
-    }
-  }
-}
+```bash
+claude mcp add -s user aide-hub aide-mcp-hub
+
+claude mcp add -s user aide-telegram aide-mcp-telegram \
+  -e TG_API_ID=<your api id> \
+  -e TG_API_HASH=<your api hash>
 ```
 
-You can also run `aide print-mcp-config claude-code` to generate this snippet with your creds pre-filled.
+Verify with:
+
+```bash
+claude mcp list
+```
+
+You should see both `aide-hub` and `aide-telegram` listed with ✓ Connected.
+
+> **Note:** Do not put these in `~/.claude/settings.json` under `mcpServers` — that field is not the primary registration path in current Claude Code. Always use `claude mcp add`, which writes to `~/.claude.json` under the correct scope.
 
 ## 5. First-time login
 
