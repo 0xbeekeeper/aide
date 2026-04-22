@@ -5,6 +5,13 @@ import { doctorCommand } from "./commands/doctor.js";
 import { initCommand } from "./commands/init.js";
 import { statusCommand } from "./commands/status.js";
 import { printMcpConfigCommand } from "./commands/print-mcp-config.js";
+import {
+  chatsListCommand,
+  chatsWorkCommand,
+  chatsIgnoreCommand,
+  chatsResetCommand,
+  chatsModeCommand,
+} from "./commands/chats.js";
 import type { Runtime } from "./runtime.js";
 
 const program = new Command();
@@ -44,6 +51,37 @@ program
   .action(async (target: string | undefined) =>
     process.exit(await printMcpConfigCommand(target)),
   );
+
+const chats = program
+  .command("chats")
+  .description("manage the work/ignore chat filter applied to list_unread");
+
+chats
+  .command("list", { isDefault: true })
+  .description("list all chats with current filter flags")
+  .action(async () => process.exit(await chatsListCommand()));
+
+chats
+  .command("work <ids...>")
+  .description("mark chats as work (kept under whitelist mode)")
+  .action(async (ids: string[]) => process.exit(await chatsWorkCommand(ids)));
+
+chats
+  .command("ignore <ids...>")
+  .description("mark chats as ignore (dropped under blacklist mode)")
+  .action(async (ids: string[]) =>
+    process.exit(await chatsIgnoreCommand(ids)),
+  );
+
+chats
+  .command("reset <ids...>")
+  .description("clear work/ignore flag for chats")
+  .action(async (ids: string[]) => process.exit(await chatsResetCommand(ids)));
+
+chats
+  .command("mode <mode>")
+  .description("set filter mode: whitelist | blacklist | off")
+  .action(async (mode: string) => process.exit(await chatsModeCommand(mode)));
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);

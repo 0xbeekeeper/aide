@@ -1,8 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getClient } from "./client.js";
-import { toMessage } from "./map.js";
-import type { Message } from "@aide-os/types";
+import { toChat, toMessage } from "./map.js";
+import type { Chat, Message } from "@aide-os/types";
+import { FilesystemAdapter } from "@aide-os/storage";
 
 function json(data: unknown) {
   return {
@@ -56,6 +57,16 @@ export function createTelegramServer(
         const sinceTs = since ? new Date(since).getTime() : 0;
         const cap = limit ?? 50;
 
+        const filter = await new FilesystemAdapter().loadChatFilter();
+        const chatAllowed = (chatId: string): boolean => {
+          if (filter.mode === "off") return true;
+          const entry = filter.chats.find((c) => c.id === chatId);
+          if (filter.mode === "whitelist") {
+            return entry?.flag === "work";
+          }
+          return entry?.flag !== "ignore";
+        };
+
         const dialogs = await client.getDialogs({ limit: 100 });
         const out: Message[] = [];
 
@@ -63,6 +74,8 @@ export function createTelegramServer(
           const unread = dialog.unreadCount ?? 0;
           if (unread <= 0) continue;
           const entity = dialog.entity;
+          const entityId = String((entity as { id?: unknown } | null)?.id ?? "");
+          if (!chatAllowed(entityId)) continue;
           const msgs = await client.getMessages(entity, { limit: unread });
           for (const m of msgs) {
             if (!m) continue;
@@ -76,7 +89,60 @@ export function createTelegramServer(
           if (out.length >= cap) break;
         }
 
-        return json(out);
+        return json({
+          filter_mode: filter.mode,
+          messages: out,
+        });
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "list_chats",
+    {
+      title: "List All Chats",
+      description:
+        "List all chats with their unread count and current filter flag (work / ignore / unset). Use for the `aide chats` workflow.",
+      inputSchema: {
+        limit: z.number().int().positive().max(200).default(100),
+      },
+    },
+    async ({ limit }) => {
+      try {
+        const client = await getClient();
+        const filter = await new FilesystemAdapter().loadChatFilter();
+
+        const dialogs = await client.getDialogs({ limit });
+        const out: Array<
+          Chat & {
+            unread_count: number;
+            last_message_ts: string | null;
+            flag: "work" | "ignore" | "unset";
+          }
+        > = [];
+
+        for (const dialog of dialogs) {
+          const entity = dialog.entity;
+          const chat = toChat(entity);
+          const entry = filter.chats.find((c) => c.id === chat.id);
+          const lastTs =
+            typeof dialog.date === "number" && dialog.date > 0
+              ? new Date(dialog.date * 1000).toISOString()
+              : null;
+          out.push({
+            ...chat,
+            unread_count: dialog.unreadCount ?? 0,
+            last_message_ts: lastTs,
+            flag: entry?.flag ?? "unset",
+          });
+        }
+
+        return json({
+          filter_mode: filter.mode,
+          chats: out,
+        });
       } catch (e) {
         return err(e);
       }

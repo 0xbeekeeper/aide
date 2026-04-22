@@ -8,7 +8,9 @@ import type {
   StyleSample,
   DailyBrief,
   Style,
+  ChatFilter,
 } from "@aide-os/types";
+import { DEFAULT_CHAT_FILTER } from "@aide-os/types";
 import type { StorageAdapter, TriageQuery, TaskQuery } from "./adapter.js";
 import { defaultConfigDir } from "./paths.js";
 
@@ -162,5 +164,15 @@ export class FilesystemAdapter implements StorageAdapter {
     if (items.length === 0) return null;
     items.sort((a, b) => b.generated_at.localeCompare(a.generated_at));
     return items[0] ?? null;
+  }
+
+  async loadChatFilter(): Promise<ChatFilter> {
+    const f = await this.readJson<ChatFilter>(this.dir("chat-filter.json"));
+    return f ?? { ...DEFAULT_CHAT_FILTER };
+  }
+
+  async saveChatFilter(f: ChatFilter): Promise<void> {
+    await this.ensure(this.root);
+    await this.writeJson(this.dir("chat-filter.json"), f);
   }
 }

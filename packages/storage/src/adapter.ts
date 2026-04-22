@@ -5,6 +5,7 @@ import type {
   StyleSample,
   DailyBrief,
   Style,
+  ChatFilter,
 } from "@aide-os/types";
 
 export interface TriageQuery {
@@ -38,4 +39,7 @@ export interface StorageAdapter {
 
   saveBrief(b: DailyBrief): Promise<void>;
   getLatestBrief(): Promise<DailyBrief | null>;
+
+  loadChatFilter(): Promise<ChatFilter>;
+  saveChatFilter(f: ChatFilter): Promise<void>;
 }
