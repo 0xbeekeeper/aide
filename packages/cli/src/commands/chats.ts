@@ -4,6 +4,41 @@ import type { ChatFilter, ChatFilterMode, ChatFlag } from "@aide-os/types";
 import { getClient, toChat } from "@aide-os/mcp-telegram";
 import { loadEnv, applyEnvToProcess } from "../env.js";
 
+/**
+ * Resolve a mix of numeric chat IDs and @usernames into { id, title } pairs.
+ * Inputs like `@izzet`, `izzet`, or `123456789` all work. Usernames that
+ * fail to resolve are logged and skipped.
+ */
+async function resolveIds(
+  raw: string[],
+): Promise<Array<{ id: string; title: string }>> {
+  const out: Array<{ id: string; title: string }> = [];
+  let client: Awaited<ReturnType<typeof getClient>> | null = null;
+  for (const r of raw) {
+    const s = r.trim();
+    if (s.length === 0) continue;
+    if (/^-?\d+$/.test(s)) {
+      out.push({ id: s, title: "" });
+      continue;
+    }
+    const handle = s.replace(/^@/, "");
+    try {
+      if (!client) client = await getClient();
+      const ent = await client.getEntity(handle);
+      const chat = toChat(ent);
+      if (!chat.id) throw new Error("empty id from getEntity");
+      out.push({ id: chat.id, title: chat.title });
+    } catch (e) {
+      console.error(
+        kleur.red(
+          `✗ could not resolve @${handle}: ${e instanceof Error ? e.message : e}`,
+        ),
+      );
+    }
+  }
+  return out;
+}
+
 interface ChatRow {
   id: string;
   title: string;
@@ -12,7 +47,7 @@ interface ChatRow {
   flag: ChatFlag | "unset";
 }
 
-async function fetchChats(limit = 100): Promise<ChatRow[]> {
+async function fetchChats(limit = 300): Promise<ChatRow[]> {
   const storage = new FilesystemAdapter();
   const filter = await storage.loadChatFilter();
   const client = await getClient();
@@ -78,7 +113,7 @@ export async function chatsListCommand(): Promise<number> {
 }
 
 async function modifyFlags(
-  ids: string[],
+  rawIds: string[],
   flag: ChatFlag | null,
 ): Promise<number> {
   const env = await loadEnv();
@@ -86,16 +121,29 @@ async function modifyFlags(
   const storage = new FilesystemAdapter();
   const filter = await storage.loadChatFilter();
 
-  const rows = await fetchChats(200);
-  const titles = new Map(rows.map((r) => [r.id, r.title]));
+  const resolved = await resolveIds(rawIds);
+  if (resolved.length === 0) {
+    console.error(kleur.red("Nothing to update (no valid IDs / usernames)."));
+    return 1;
+  }
 
-  for (const id of ids) {
+  // Best-effort: fill in titles for numeric IDs by looking at recent dialogs.
+  // Usernames already have titles from getEntity.
+  const needsTitle = resolved.filter((r) => !r.title).map((r) => r.id);
+  if (needsTitle.length > 0) {
+    const rows = await fetchChats(300);
+    const titles = new Map(rows.map((r) => [r.id, r.title]));
+    for (const r of resolved) {
+      if (!r.title) r.title = titles.get(r.id) ?? "(unknown)";
+    }
+  }
+
+  for (const { id, title } of resolved) {
     const idx = filter.chats.findIndex((c) => c.id === id);
     if (flag === null) {
       if (idx !== -1) filter.chats.splice(idx, 1);
       continue;
     }
-    const title = titles.get(id) ?? "(unknown)";
     const entry = {
       id,
       title,
