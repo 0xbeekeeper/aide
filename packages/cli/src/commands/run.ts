@@ -70,6 +70,16 @@ export async function runCommand(
       state.last_triage_at = new Date().toISOString();
       await writeState(state);
 
+      // Chain aide-reply so drafts exist for any new needs_reply records
+      // before push-pending runs. Without this, bot shows no new cards
+      // because there's nothing to push.
+      const replySkill = findSkill("reply");
+      if (replySkill) {
+        console.log(kleur.dim(`▶ chaining ${replySkill.name}`));
+        const replyPrompt = await enrichWithProfile(replySkill.prompt);
+        await runClaudeCode(replyPrompt);
+      }
+
       // Chain aide-task so commitments / asks / deadlines get captured
       // alongside triage without a separate cron job.
       const taskSkill = findSkill("task");
