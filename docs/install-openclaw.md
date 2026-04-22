@@ -15,12 +15,12 @@ Same as Claude Code:
 ## 1. Clone, build, link
 
 ```bash
-git clone https://github.com/<your-fork>/chief-of-staff.git
-cd chief-of-staff
+git clone https://github.com/<your-fork>/aide.git
+cd aide
 pnpm install && pnpm -r build
-pnpm link --global --filter @chief-of-staff/cli
-pnpm link --global --filter @chief-of-staff/mcp-hub
-pnpm link --global --filter @chief-of-staff/mcp-telegram
+pnpm link --global --filter @aide-os/cli
+pnpm link --global --filter @aide-os/mcp-hub
+pnpm link --global --filter @aide-os/mcp-telegram
 ```
 
 ## 2. Install skills
@@ -30,7 +30,7 @@ Symlink into OpenCLAW's skills directory (typically `~/.openclaw/skills/` — ch
 ```bash
 OPENCLAW_SKILLS="$HOME/.openclaw/skills"
 mkdir -p "$OPENCLAW_SKILLS"
-for s in cos-triage cos-reply cos-task cos-brief cos-style-extract; do
+for s in aide-triage aide-reply aide-task aide-brief aide-style-extract; do
   ln -sf "$(pwd)/skills/$s" "$OPENCLAW_SKILLS/$s"
 done
 ```
@@ -42,9 +42,9 @@ OpenCLAW reads MCP config from `~/.openclaw/mcp.json` (verify with `openclaw con
 ```json
 {
   "mcpServers": {
-    "chief-of-staff-hub": { "command": "cos-mcp-hub" },
-    "chief-of-staff-telegram": {
-      "command": "cos-mcp-telegram",
+    "aide-hub": { "command": "aide-mcp-hub" },
+    "aide-telegram": {
+      "command": "aide-mcp-telegram",
       "env": {
         "TG_API_ID": "<your api id>",
         "TG_API_HASH": "<your api hash>"
@@ -54,17 +54,17 @@ OpenCLAW reads MCP config from `~/.openclaw/mcp.json` (verify with `openclaw con
 }
 ```
 
-You can also run `cos print-mcp-config openclaw` to generate this with your creds filled.
+You can also run `aide print-mcp-config openclaw` to generate this with your creds filled.
 
 ## 4. Login and run
 
 ```bash
-cos init
-cos doctor
-cos run triage --runtime openclaw
+aide init
+aide doctor
+aide run triage --runtime openclaw
 ```
 
-If `cos` auto-detects `openclaw` on PATH first, it will use that runtime by default.
+If `aide` auto-detects `openclaw` on PATH first, it will use that runtime by default.
 
 ## Differences vs Claude Code
 
@@ -75,4 +75,4 @@ If `cos` auto-detects `openclaw` on PATH first, it will use that runtime by defa
 | Scheduled runs | `/schedule` skill | cron / launchd |
 | Runtime env | `CLAUDE_CODE_*` | `OPENCLAW_*` |
 
-All skill content is identical — chief-of-staff doesn't depend on any framework-specific primitives.
+All skill content is identical — aide doesn't depend on any framework-specific primitives.

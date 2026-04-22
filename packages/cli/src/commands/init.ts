@@ -41,7 +41,7 @@ async function prompt(q: string, secret = false): Promise<string> {
 }
 
 export async function initCommand(): Promise<number> {
-  console.log(kleur.bold("\n▶ chief-of-staff init\n"));
+  console.log(kleur.bold("\n▶ aide init\n"));
   console.log(
     "This wizard configures Telegram credentials and signs you in.\n" +
       `Config will be stored at: ${kleur.cyan(configDir())}\n`,
@@ -85,7 +85,7 @@ export async function initCommand(): Promise<number> {
 
   console.log(kleur.bold("\n▶ Telegram login\n"));
   const loginBin = require.resolve(
-    "@chief-of-staff/mcp-telegram/dist/login.js",
+    "@aide-os/mcp-telegram/dist/login.js",
   );
   const code = await new Promise<number>((resolve) => {
     const child = spawn(process.execPath, [loginBin], {
@@ -102,7 +102,7 @@ export async function initCommand(): Promise<number> {
 
   console.log(
     kleur.green("\n✓ setup complete. ") +
-      `Try ${kleur.cyan("cos doctor")} then ${kleur.cyan("cos run triage")}.\n`,
+      `Try ${kleur.cyan("aide doctor")} then ${kleur.cyan("aide run triage")}.\n`,
   );
   return 0;
 }

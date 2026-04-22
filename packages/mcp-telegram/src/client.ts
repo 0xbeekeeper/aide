@@ -10,7 +10,7 @@ export async function getClient(): Promise<TelegramClient> {
   const sessionString = await loadSession();
   if (sessionString.length === 0) {
     throw new Error(
-      "No Telegram session found. Run `cos init` (or `pnpm --filter @chief-of-staff/mcp-telegram login`) to create one.",
+      "No Telegram session found. Run `aide init` (or `pnpm --filter @aide-os/mcp-telegram login`) to create one.",
     );
   }
   const session = new StringSession(sessionString);
@@ -23,7 +23,7 @@ export async function getClient(): Promise<TelegramClient> {
   const ok = await client.checkAuthorization();
   if (!ok) {
     throw new Error(
-      "Telegram session is not authorized. Re-run `cos init` to refresh.",
+      "Telegram session is not authorized. Re-run `aide init` to refresh.",
     );
   }
   cached = client;

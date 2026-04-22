@@ -1,9 +1,9 @@
 ---
-name: cos-task
-description: Extract actionable tasks from recent Telegram messages and save them to the hub (optionally syncing to Notion). Use when the user asks "pull tasks from my inbox", "what do I owe people", "extract todos", or when `cos run task` is invoked.
+name: aide-task
+description: Extract actionable tasks from recent Telegram messages and save them to the hub (optionally syncing to Notion). Use when the user asks "pull tasks from my inbox", "what do I owe people", "extract todos", or when `aide run task` is invoked.
 ---
 
-# cos-task
+# aide-task
 
 You scan recent triage records and chat threads to extract **actionable tasks** for the user — things they committed to, things others are waiting on, things with an implied deadline. Each task is a `Task` record saved to the hub. If a Notion MCP is available, you additionally sync open tasks to the user's task database.
 
@@ -13,27 +13,27 @@ Triggers:
 - "extract tasks from my messages"
 - "what am I on the hook for"
 - "pull my todos"
-- `cos run task`
+- `aide run task`
 
 ## Required MCP tools
 
-1. **`chief-of-staff-hub`** — `list_triage`, `save_task`, `list_tasks`
-2. **`chief-of-staff-telegram`** — `get_chat_context` (for thread context when needed)
+1. **`aide-hub`** — `list_triage`, `save_task`, `list_tasks`
+2. **`aide-telegram`** — `get_chat_context` (for thread context when needed)
 3. *(optional)* **Notion MCP** — if `Notion` tools are available, sync to the user's Notion tasks DB
 
-If the first two are missing, stop and tell the user to run `cos doctor`.
+If the first two are missing, stop and tell the user to run `aide doctor`.
 
 ## Workflow
 
 ### Step 1. Fetch recent triage
 
-Call `chief-of-staff-hub.list_triage` with:
+Call `aide-hub.list_triage` with:
 - `since`: now minus 24h
 - `limit`: 100
 
 ### Step 2. Deduplicate against existing tasks
 
-Call `chief-of-staff-hub.list_tasks` with `status: "open"` to get currently open tasks. Skip triage records whose `message_id` already appears in some `task.source_message_id`.
+Call `aide-hub.list_tasks` with `status: "open"` to get currently open tasks. Skip triage records whose `message_id` already appears in some `task.source_message_id`.
 
 ### Step 3. For each candidate, decide if it's a task
 
@@ -70,7 +70,7 @@ For each valid candidate, produce:
 
 ### Step 5. Save to hub
 
-For each task, call `chief-of-staff-hub.save_task`.
+For each task, call `aide-hub.save_task`.
 
 ### Step 6 (optional). Sync to Notion
 
@@ -108,6 +108,6 @@ End with: `Saved <N> tasks to hub.` If Notion sync ran: `Synced <K> to Notion.`
 
 ## Not in scope
 
-- Closing / updating tasks — that's the user's job via Notion or `cos task close <id>`.
+- Closing / updating tasks — that's the user's job via Notion or `aide task close <id>`.
 - Reminders — a scheduler concern, outside this skill.
-- Triage — done upstream by `cos-triage`.
+- Triage — done upstream by `aide-triage`.

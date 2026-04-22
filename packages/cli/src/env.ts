@@ -6,8 +6,8 @@ import { envFilePath } from "./paths.js";
 export interface EnvFile {
   TG_API_ID?: string;
   TG_API_HASH?: string;
-  COS_STORAGE?: "filesystem" | "notion";
-  COS_TG_ALLOW_SEND?: "0" | "1";
+  AIDE_STORAGE?: "filesystem" | "notion";
+  AIDE_TG_ALLOW_SEND?: "0" | "1";
 }
 
 export async function loadEnv(): Promise<EnvFile> {

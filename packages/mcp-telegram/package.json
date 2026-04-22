@@ -1,12 +1,12 @@
 {
-  "name": "@chief-of-staff/mcp-telegram",
+  "name": "@aide-os/mcp-telegram",
   "version": "0.0.0",
   "description": "MCP server exposing the user's Telegram inbox via a user session (gramjs)",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "cos-mcp-telegram": "./dist/bin.js",
-    "cos-tg-login": "./dist/login.js"
+    "aide-mcp-telegram": "./dist/bin.js",
+    "aide-tg-login": "./dist/login.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,7 +32,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@chief-of-staff/types": "workspace:*",
+    "@aide-os/types": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.20.0",
     "input": "^1.0.1",
     "telegram": "^2.26.22",

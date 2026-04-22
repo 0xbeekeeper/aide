@@ -1,6 +1,6 @@
 # Architecture
 
-chief-of-staff is deliberately split into three independent concerns:
+aide is deliberately split into three independent concerns:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -14,16 +14,16 @@ chief-of-staff is deliberately split into three independent concerns:
     ┌───────────────────┐  ┌────────────────────────┐
     │   skills/         │  │  MCP servers           │
     │                   │  │                        │
-    │  cos-triage       │  │  @chief-of-staff/      │
-    │  cos-reply        │  │    mcp-hub             │
-    │  cos-task         │  │    mcp-telegram        │
-    │  cos-brief        │  │                        │
-    │  cos-style-extract│  │                        │
+    │  aide-triage       │  │  @aide-os/      │
+    │  aide-reply        │  │    mcp-hub             │
+    │  aide-task         │  │    mcp-telegram        │
+    │  aide-brief        │  │                        │
+    │  aide-style-extract│  │                        │
     └───────────────────┘  └────────────────────────┘
                 │                     │
                 │                     ▼
                 │         ┌────────────────────────┐
-                │         │ @chief-of-staff/       │
+                │         │ @aide-os/       │
                 │         │   storage              │
                 │         │                        │
                 │         │ FilesystemAdapter      │
@@ -31,7 +31,7 @@ chief-of-staff is deliberately split into three independent concerns:
                 │         └────────────────────────┘
                 ▼
     ┌────────────────────┐
-    │ @chief-of-staff/   │
+    │ @aide-os/   │
     │   types            │ ← single source of truth for all schemas
     └────────────────────┘
 ```
@@ -39,30 +39,30 @@ chief-of-staff is deliberately split into three independent concerns:
 ## Principles
 
 1. **MCP + Skills only** — we don't use Claude Code hooks, CronCreate, or any host-specific primitive. Scheduling is externalized (cron / launchd).
-2. **Shared schema** — everything shaped by `@chief-of-staff/types`. Any component can be swapped out as long as it respects the types.
-3. **Pluggable storage** — `StorageAdapter` interface. Default = filesystem at `~/.config/chief-of-staff/`. Future = Notion, Postgres, whatever.
+2. **Shared schema** — everything shaped by `@aide-os/types`. Any component can be swapped out as long as it respects the types.
+3. **Pluggable storage** — `StorageAdapter` interface. Default = filesystem at `~/.config/aide/`. Future = Notion, Postgres, whatever.
 4. **Bring-your-own-host** — the agent runtime is never installed by us. Users keep their existing Claude Code / OpenCLAW / Cursor.
 
 ## Package layout
 
 | Package | Purpose | Depends on |
 |---|---|---|
-| `@chief-of-staff/types` | Type contract | — |
-| `@chief-of-staff/storage` | Adapter interface + filesystem impl | types |
-| `@chief-of-staff/mcp-hub` | MCP server exposing storage CRUD | storage, types |
-| `@chief-of-staff/mcp-telegram` | MCP server wrapping gramjs user session | types |
-| `@chief-of-staff/cli` (`cos`) | `init`, `run`, `doctor`, `status` | all of the above |
+| `@aide-os/types` | Type contract | — |
+| `@aide-os/storage` | Adapter interface + filesystem impl | types |
+| `@aide-os/mcp-hub` | MCP server exposing storage CRUD | storage, types |
+| `@aide-os/mcp-telegram` | MCP server wrapping gramjs user session | types |
+| `@aide-os/cli` (`aide`) | `init`, `run`, `doctor`, `status` | all of the above |
 
 ## Data flow (triage)
 
 ```
-user invokes `cos run triage`
+user invokes `aide run triage`
     │
     ▼
-cos detects runtime → spawns `claude -p "... cos-triage ..."`
+aide detects runtime → spawns `claude -p "... aide-triage ..."`
     │
     ▼
-claude loads cos-triage/SKILL.md (auto-discovered)
+claude loads aide-triage/SKILL.md (auto-discovered)
     │
     ▼
 skill calls mcp-telegram.list_unread → Message[]
@@ -77,10 +77,10 @@ skill calls mcp-hub.save_triage for each
 skill prints summary to user
 ```
 
-Storage lives at `~/.config/chief-of-staff/`:
+Storage lives at `~/.config/aide/`:
 
 ```
-~/.config/chief-of-staff/
+~/.config/aide/
 ├── .env                    # TG_API_ID, TG_API_HASH
 ├── telegram.session        # gramjs StringSession
 ├── triage/<message_id>.json
@@ -92,6 +92,6 @@ Storage lives at `~/.config/chief-of-staff/`:
 
 ## Extending
 
-- **New input channel** (Slack / Discord / email): add a new MCP server (`@chief-of-staff/mcp-slack`, etc.) exposing the same `Message` shape. All downstream skills keep working.
-- **Different storage backend**: implement `StorageAdapter`, configure via `COS_STORAGE=...`. Example: Notion-backed hub for multi-device access.
+- **New input channel** (Slack / Discord / email): add a new MCP server (`@aide-os/mcp-slack`, etc.) exposing the same `Message` shape. All downstream skills keep working.
+- **Different storage backend**: implement `StorageAdapter`, configure via `AIDE_STORAGE=...`. Example: Notion-backed hub for multi-device access.
 - **New skills**: add `skills/<name>/SKILL.md`. If it needs new tools, extend mcp-hub or ship a separate MCP package.

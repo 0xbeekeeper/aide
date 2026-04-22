@@ -1,28 +1,28 @@
 ---
-name: cos-style-extract
-description: Extract reply style samples from the user's own Telegram sent history and classify them into professional / push / casual buckets. Use on first-time setup or when the user asks to "re-learn my style", "refresh style samples", or when `cos run extract-style` is invoked.
+name: aide-style-extract
+description: Extract reply style samples from the user's own Telegram sent history and classify them into professional / push / casual buckets. Use on first-time setup or when the user asks to "re-learn my style", "refresh style samples", or when `aide run extract-style` is invoked.
 ---
 
-# cos-style-extract
+# aide-style-extract
 
-You cold-start the reply engine by pulling the user's own sent messages from Telegram, classifying each into one of three styles (`professional`, `push`, `casual`), and saving them as `StyleSample` records. These samples are later used by `cos-reply` to imitate the user's voice.
+You cold-start the reply engine by pulling the user's own sent messages from Telegram, classifying each into one of three styles (`professional`, `push`, `casual`), and saving them as `StyleSample` records. These samples are later used by `aide-reply` to imitate the user's voice.
 
 This skill runs **once** at onboarding, plus occasionally when the user wants to refresh.
 
 ## When to run
 
 Triggers:
-- First-time setup (called by `cos init` or explicitly)
+- First-time setup (called by `aide init` or explicitly)
 - "re-learn my style"
 - "refresh style samples"
-- `cos run extract-style`
+- `aide run extract-style`
 
 ## Required MCP tools
 
-1. **`chief-of-staff-telegram`** — `list_history` with `from_self: true`
-2. **`chief-of-staff-hub`** — `save_style_samples`, `count_samples` via `list_style_samples`
+1. **`aide-telegram`** — `list_history` with `from_self: true`
+2. **`aide-hub`** — `save_style_samples`, `count_samples` via `list_style_samples`
 
-If missing, stop and tell the user to run `cos doctor`.
+If missing, stop and tell the user to run `aide doctor`.
 
 ## Workflow
 
@@ -32,7 +32,7 @@ Ask the user: "I'm about to read up to **500** of your own sent messages from th
 
 ### Step 2. Pull sent history
 
-Call `chief-of-staff-telegram.list_history` with:
+Call `aide-telegram.list_history` with:
 - `from_self: true`
 - `since`: now − 90 days
 - `limit`: 500
@@ -62,7 +62,7 @@ For each kept message, classify by reading the **text alone** (no thread context
 
 When a message fits multiple styles, pick the **dominant** one. When truly ambiguous (≤ 50% confidence), skip — do not force classification.
 
-Target ~10-30 samples per style. If any style has < 5 samples after classification, tell the user "low sample count for <style> — `cos-reply` will fall back to generic baseline for that style."
+Target ~10-30 samples per style. If any style has < 5 samples after classification, tell the user "low sample count for <style> — `aide-reply` will fall back to generic baseline for that style."
 
 ### Step 5. Build StyleSample records
 
@@ -76,13 +76,13 @@ For each classified message:
   source_message_id: message.id,
   source_chat_id: message.chat.id,
   extracted_at: <ISO now>,
-  approved: false    // user will review via `cos style review`
+  approved: false    // user will review via `aide style review`
 }
 ```
 
 ### Step 6. Save
 
-Call `chief-of-staff-hub.save_style_samples` with the entire array in one call.
+Call `aide-hub.save_style_samples` with the entire array in one call.
 
 ### Step 7. Summary
 
@@ -95,7 +95,7 @@ Call `chief-of-staff-hub.save_style_samples` with the entire array in one call.
 
 Total: <N> samples saved, approved=false (pending review).
 
-Next: run `cos style review` to approve / edit samples, or `cos run reply` to try them out as-is.
+Next: run `aide style review` to approve / edit samples, or `aide run reply` to try them out as-is.
 ```
 
 ## Rules
@@ -108,6 +108,6 @@ Next: run `cos style review` to approve / edit samples, or `cos run reply` to tr
 
 ## Not in scope
 
-- Drafting replies → `cos-reply`.
+- Drafting replies → `aide-reply`.
 - Triage or task extraction → separate skills.
-- Sample curation UI → CLI will add `cos style review` in a later phase.
+- Sample curation UI → CLI will add `aide style review` in a later phase.

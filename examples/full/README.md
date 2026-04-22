@@ -5,18 +5,18 @@ All 5 skills, filesystem storage, optional Notion sync.
 ## Setup
 
 ```bash
-cd /path/to/chief-of-staff
+cd /path/to/aide
 pnpm install && pnpm -r build
-pnpm link --global --filter @chief-of-staff/cli
-pnpm link --global --filter @chief-of-staff/mcp-hub
-pnpm link --global --filter @chief-of-staff/mcp-telegram
+pnpm link --global --filter @aide-os/cli
+pnpm link --global --filter @aide-os/mcp-hub
+pnpm link --global --filter @aide-os/mcp-telegram
 
 # install all skills
-for s in cos-triage cos-reply cos-task cos-brief cos-style-extract; do
+for s in aide-triage aide-reply aide-task aide-brief aide-style-extract; do
   ln -sf "$(pwd)/skills/$s" "$HOME/.claude/skills/$s"
 done
 
-cos init
+aide init
 ```
 
 ## Claude Code settings.json
@@ -24,9 +24,9 @@ cos init
 ```json
 {
   "mcpServers": {
-    "chief-of-staff-hub": { "command": "cos-mcp-hub" },
-    "chief-of-staff-telegram": {
-      "command": "cos-mcp-telegram",
+    "aide-hub": { "command": "aide-mcp-hub" },
+    "aide-telegram": {
+      "command": "aide-mcp-telegram",
       "env": {
         "TG_API_ID": "1234567",
         "TG_API_HASH": "abcd1234…"
@@ -42,32 +42,32 @@ If you also want Notion task sync, add your Notion MCP (unchanged — use whatev
 
 ```bash
 # one-time, at onboarding
-cos run extract-style
+aide run extract-style
 
 # morning
-cos run brief
+aide run brief
 
 # every 15 min (put in cron)
-cos run triage
+aide run triage
 
 # when you want drafts
-cos run reply
+aide run reply
 
 # when you want your todos updated
-cos run task
+aide run task
 ```
 
 ## Cron (macOS / linux)
 
 ```cron
-*/15 * * * *  cos run triage
-0 8 * * *     cos run brief
-0 */4 * * *   cos run task
+*/15 * * * *  aide run triage
+0 8 * * *     aide run brief
+0 */4 * * *   aide run task
 ```
 
 ## Hub output
 
-Check `~/.config/chief-of-staff/`:
+Check `~/.config/aide/`:
 
 - `triage/*.json` — per-message decisions
 - `drafts/<message_id>/*.json` — candidate replies

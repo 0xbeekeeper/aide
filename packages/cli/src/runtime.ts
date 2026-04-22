@@ -43,7 +43,7 @@ export function manualInstructions(skillName: string, prompt: string): string {
     `  "${prompt}"`,
     "",
     `The host must have the '${skillName}' skill installed and the`,
-    "chief-of-staff-hub / chief-of-staff-telegram MCP servers configured.",
+    "aide-hub / aide-telegram MCP servers configured.",
     "",
     "See docs/install-claude-code.md for setup instructions.",
     "",

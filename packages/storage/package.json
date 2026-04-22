@@ -1,7 +1,7 @@
 {
-  "name": "@chief-of-staff/storage",
+  "name": "@aide-os/storage",
   "version": "0.0.0",
-  "description": "Pluggable storage adapters for chief-of-staff (filesystem, notion)",
+  "description": "Pluggable storage adapters for aide (filesystem, notion)",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,6 +26,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@chief-of-staff/types": "workspace:*"
+    "@aide-os/types": "workspace:*"
   }
 }

@@ -1,6 +1,6 @@
 # Install on Claude Code
 
-This guide gets chief-of-staff running inside Claude Code in ~10 minutes.
+This guide gets aide running inside Claude Code in ~10 minutes.
 
 ## Prerequisites
 
@@ -13,29 +13,29 @@ This guide gets chief-of-staff running inside Claude Code in ~10 minutes.
 ## 1. Clone and build
 
 ```bash
-git clone https://github.com/<your-fork>/chief-of-staff.git
-cd chief-of-staff
+git clone https://github.com/<your-fork>/aide.git
+cd aide
 pnpm install
 pnpm -r build
 ```
 
-This builds every package and installs the `cos` CLI.
+This builds every package and installs the `aide` CLI.
 
 ## 2. Link the CLI
 
-For personal use, link the `cos` binary onto your PATH:
+For personal use, link the `aide` binary onto your PATH:
 
 ```bash
-pnpm link --global --filter @chief-of-staff/cli
-pnpm link --global --filter @chief-of-staff/mcp-hub
-pnpm link --global --filter @chief-of-staff/mcp-telegram
+pnpm link --global --filter @aide-os/cli
+pnpm link --global --filter @aide-os/mcp-hub
+pnpm link --global --filter @aide-os/mcp-telegram
 ```
 
 Verify:
 
 ```bash
-cos --version
-which cos-mcp-hub cos-mcp-telegram
+aide --version
+which aide-mcp-hub aide-mcp-telegram
 ```
 
 ## 3. Install the skills
@@ -43,7 +43,7 @@ which cos-mcp-hub cos-mcp-telegram
 Symlink each skill directory into `~/.claude/skills/`:
 
 ```bash
-for s in cos-triage cos-reply cos-task cos-brief cos-style-extract; do
+for s in aide-triage aide-reply aide-task aide-brief aide-style-extract; do
   ln -sf "$(pwd)/skills/$s" "$HOME/.claude/skills/$s"
 done
 ```
@@ -57,11 +57,11 @@ Add to `~/.claude/settings.json` (merge with any existing `mcpServers`):
 ```json
 {
   "mcpServers": {
-    "chief-of-staff-hub": {
-      "command": "cos-mcp-hub"
+    "aide-hub": {
+      "command": "aide-mcp-hub"
     },
-    "chief-of-staff-telegram": {
-      "command": "cos-mcp-telegram",
+    "aide-telegram": {
+      "command": "aide-mcp-telegram",
       "env": {
         "TG_API_ID": "<your api id>",
         "TG_API_HASH": "<your api hash>"
@@ -71,23 +71,23 @@ Add to `~/.claude/settings.json` (merge with any existing `mcpServers`):
 }
 ```
 
-You can also run `cos print-mcp-config claude-code` to generate this snippet with your creds pre-filled.
+You can also run `aide print-mcp-config claude-code` to generate this snippet with your creds pre-filled.
 
 ## 5. First-time login
 
 ```bash
-cos init
+aide init
 ```
 
 This:
-1. Prompts for `TG_API_ID` / `TG_API_HASH` and saves them to `~/.config/chief-of-staff/.env`
+1. Prompts for `TG_API_ID` / `TG_API_HASH` and saves them to `~/.config/aide/.env`
 2. Runs the Telegram login flow (phone → code → 2FA)
-3. Saves your session string to `~/.config/chief-of-staff/telegram.session`
+3. Saves your session string to `~/.config/aide/telegram.session`
 
 ## 6. Verify
 
 ```bash
-cos doctor
+aide doctor
 ```
 
 All 5 checks should be ✓.
@@ -97,15 +97,15 @@ All 5 checks should be ✓.
 Cold-start your style samples (reads ~500 of your own sent messages):
 
 ```bash
-cos run extract-style
+aide run extract-style
 ```
 
 Then triage your inbox:
 
 ```bash
-cos run triage
-cos run reply
-cos run brief
+aide run triage
+aide run reply
+aide run brief
 ```
 
 ## Scheduling
@@ -114,28 +114,28 @@ Claude Code's `/schedule` skill can run these on a cron. Example — triage ever
 
 ```bash
 # inside a claude code session
-/schedule "Every 15 minutes, run: cos run triage"
+/schedule "Every 15 minutes, run: aide run triage"
 ```
 
 Or use system cron / launchd directly:
 
 ```cron
-*/15 * * * *  /usr/local/bin/cos run triage
-0    8 * * *  /usr/local/bin/cos run brief
+*/15 * * * *  /usr/local/bin/aide run triage
+0    8 * * *  /usr/local/bin/aide run brief
 ```
 
 ## Troubleshooting
 
-- **`cos: command not found`** — re-run `pnpm link --global --filter @chief-of-staff/cli`
-- **`No Telegram session found`** — run `cos init` again
-- **`MCP server 'chief-of-staff-hub' failed to start`** — make sure `cos-mcp-hub` resolves on Claude Code's PATH; add the absolute path to `command` in `settings.json` if needed
+- **`aide: command not found`** — re-run `pnpm link --global --filter @aide-os/cli`
+- **`No Telegram session found`** — run `aide init` again
+- **`MCP server 'aide-hub' failed to start`** — make sure `aide-mcp-hub` resolves on Claude Code's PATH; add the absolute path to `command` in `settings.json` if needed
 - **Telegram rate limits** — the MCP client respects gramjs's default backoff; don't hammer `list_unread` at sub-minute intervals
 
 ## Uninstall
 
 ```bash
-rm "$HOME/.claude/skills/cos-"*
-rm -rf "$HOME/.config/chief-of-staff"
-pnpm unlink --global @chief-of-staff/cli @chief-of-staff/mcp-hub @chief-of-staff/mcp-telegram
+rm "$HOME/.claude/skills/aide-"*
+rm -rf "$HOME/.config/aide"
+pnpm unlink --global @aide-os/cli @aide-os/mcp-hub @aide-os/mcp-telegram
 # then remove the mcpServers entries from ~/.claude/settings.json
 ```

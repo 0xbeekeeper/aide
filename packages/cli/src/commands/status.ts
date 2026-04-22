@@ -1,5 +1,5 @@
 import kleur from "kleur";
-import { FilesystemAdapter } from "@chief-of-staff/storage";
+import { FilesystemAdapter } from "@aide-os/storage";
 
 export async function statusCommand(): Promise<number> {
   const storage = new FilesystemAdapter();
@@ -13,7 +13,7 @@ export async function statusCommand(): Promise<number> {
 
   const pending = triage.filter((t) => t.needs_reply);
 
-  console.log(kleur.bold("\ncos status — last 24h\n"));
+  console.log(kleur.bold("\naide status — last 24h\n"));
   console.log(`  ${kleur.cyan("triage:")}   ${triage.length} records (${pending.length} need reply)`);
   console.log(`  ${kleur.cyan("tasks:")}    ${tasks.length} open`);
   console.log(

@@ -1,9 +1,9 @@
 ---
-name: cos-brief
-description: Generate a daily briefing markdown aggregating the last 24 hours of triage results and open tasks. Use when the user asks "give me a morning brief", "what's on my plate today", "daily rundown", or when `cos run brief` is invoked.
+name: aide-brief
+description: Generate a daily briefing markdown aggregating the last 24 hours of triage results and open tasks. Use when the user asks "give me a morning brief", "what's on my plate today", "daily rundown", or when `aide run brief` is invoked.
 ---
 
-# cos-brief
+# aide-brief
 
 You produce a **daily briefing** — a single markdown document summarizing what happened in the last 24 hours across the user's communication channels, plus their current open tasks. The brief is saved to the hub and printed to the user.
 
@@ -13,15 +13,15 @@ Triggers:
 - "give me a brief"
 - "morning rundown"
 - "what's on my plate"
-- `cos run brief`
+- `aide run brief`
 
 Typically run once per morning (via cron / launchd / CronCreate), but can be run ad-hoc.
 
 ## Required MCP tools
 
-1. **`chief-of-staff-hub`** — `list_triage`, `list_tasks`, `save_brief`
+1. **`aide-hub`** — `list_triage`, `list_tasks`, `save_brief`
 
-If missing, stop and tell the user to run `cos doctor`.
+If missing, stop and tell the user to run `aide doctor`.
 
 ## Workflow
 
@@ -54,7 +54,7 @@ For each need_reply triage, one bullet:
 - **<chat title>** — <sender display_name> — <priority emoji>
   > <summary>
 
-Sort: urgent > high > medium > low. Cap at 10; if more, add "…and <k> more — see `cos run triage`".
+Sort: urgent > high > medium > low. Cap at 10; if more, add "…and <k> more — see `aide run triage`".
 
 ## ✅ Open tasks (<N>)
 For each open task, one bullet:
@@ -80,7 +80,7 @@ A 2-3 sentence paragraph synthesizing the above — what the user should tackle 
 
 ### Step 4. Save the brief
 
-Call `chief-of-staff-hub.save_brief` with a `DailyBrief`:
+Call `aide-hub.save_brief` with a `DailyBrief`:
 
 ```ts
 {
@@ -101,7 +101,7 @@ Print the markdown exactly as generated. Do not add preamble or postscript.
 
 ## Rules
 
-1. **No speculation** — only report what's in the hub. If something is missing, say so explicitly ("no triage in the last 24h — run `cos run triage`").
+1. **No speculation** — only report what's in the hub. If something is missing, say so explicitly ("no triage in the last 24h — run `aide run triage`").
 2. **No duplication** — a message that's in `need_reply` must not also be in `fyi`.
 3. **Keep it skimmable** — the whole brief should fit on one screen. Trim aggressively.
 4. **Time zones** — use the user's local date in the H1 but ISO 8601 in the period line.
@@ -109,6 +109,6 @@ Print the markdown exactly as generated. Do not add preamble or postscript.
 
 ## Not in scope
 
-- Drafting replies → `cos-reply`.
-- Extracting new tasks → `cos-task`.
+- Drafting replies → `aide-reply`.
+- Extracting new tasks → `aide-task`.
 - Pulling Telegram directly → this skill only reads from the hub.

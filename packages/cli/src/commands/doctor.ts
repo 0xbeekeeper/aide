@@ -38,7 +38,7 @@ export async function doctorCommand(): Promise<number> {
     status: existsSync(sessionFilePath()) ? "ok" : "fail",
     detail: existsSync(sessionFilePath())
       ? sessionFilePath()
-      : "missing — run `cos init` to sign in",
+      : "missing — run `aide init` to sign in",
   });
 
   const runtime = detectRuntime();
@@ -54,7 +54,7 @@ export async function doctorCommand(): Promise<number> {
   const emoji = (s: Check["status"]) =>
     s === "ok" ? kleur.green("✓") : s === "warn" ? kleur.yellow("!") : kleur.red("✗");
 
-  console.log(kleur.bold("\ncos doctor\n"));
+  console.log(kleur.bold("\naide doctor\n"));
   for (const c of checks) {
     console.log(`  ${emoji(c.status)} ${c.name.padEnd(20)} ${kleur.dim(c.detail)}`);
   }

@@ -3,14 +3,14 @@ import { z } from "zod";
 import {
   FilesystemAdapter,
   type StorageAdapter,
-} from "@chief-of-staff/storage";
+} from "@aide-os/storage";
 import type {
   Triage,
   ReplyDraft,
   Task,
   StyleSample,
   DailyBrief,
-} from "@chief-of-staff/types";
+} from "@aide-os/types";
 
 const PrioritySchema = z.enum(["urgent", "high", "medium", "low", "ignore"]);
 const IntentSchema = z.enum([
@@ -102,7 +102,7 @@ function json(data: unknown) {
 export function createHubServer(opts: HubServerOptions = {}): McpServer {
   const storage: StorageAdapter = opts.storage ?? new FilesystemAdapter();
   const server = new McpServer({
-    name: opts.name ?? "chief-of-staff-hub",
+    name: opts.name ?? "aide-hub",
     version: opts.version ?? "0.0.0",
   });
 

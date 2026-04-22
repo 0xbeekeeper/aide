@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getClient } from "./client.js";
 import { toMessage } from "./map.js";
-import type { Message } from "@chief-of-staff/types";
+import type { Message } from "@aide-os/types";
 
 function json(data: unknown) {
   return {
@@ -33,7 +33,7 @@ export function createTelegramServer(
 ): McpServer {
   const readOnly = opts.readOnly ?? true;
   const server = new McpServer({
-    name: opts.name ?? "chief-of-staff-telegram",
+    name: opts.name ?? "aide-telegram",
     version: opts.version ?? "0.0.0",
   });
 
@@ -168,7 +168,7 @@ export function createTelegramServer(
       {
         title: "Send Message (⚠️ writes to Telegram)",
         description:
-          "Send a message to a chat. Disabled by default — requires COS_TG_ALLOW_SEND=1 to enable.",
+          "Send a message to a chat. Disabled by default — requires AIDE_TG_ALLOW_SEND=1 to enable.",
         inputSchema: {
           chat_id: z.string(),
           text: z.string(),
@@ -177,9 +177,9 @@ export function createTelegramServer(
       },
       async ({ chat_id, text, reply_to_id }) => {
         try {
-          if (process.env["COS_TG_ALLOW_SEND"] !== "1") {
+          if (process.env["AIDE_TG_ALLOW_SEND"] !== "1") {
             return err(
-              "send_message is gated behind COS_TG_ALLOW_SEND=1 for safety.",
+              "send_message is gated behind AIDE_TG_ALLOW_SEND=1 for safety.",
             );
           }
           const client = await getClient();

@@ -1,4 +1,4 @@
-import type { Message, Chat, Sender } from "@chief-of-staff/types";
+import type { Message, Chat, Sender } from "@aide-os/types";
 import type { TelegramClient } from "telegram";
 import type { Api } from "telegram";
 

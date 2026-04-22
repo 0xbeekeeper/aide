@@ -21,7 +21,7 @@ export async function runCommand(
     for (const s of SKILLS) {
       console.log(`  ${kleur.cyan(s.alias.padEnd(16))} ${s.description}`);
     }
-    console.log(`\nUsage: ${kleur.dim("cos run <alias>")}`);
+    console.log(`\nUsage: ${kleur.dim("aide run <alias>")}`);
     return 0;
   }
 
@@ -29,7 +29,7 @@ export async function runCommand(
   if (!skill) {
     console.error(kleur.red(`Unknown skill: ${alias}`));
     console.error(
-      `Run ${kleur.cyan("cos run")} with no argument to see available skills.`,
+      `Run ${kleur.cyan("aide run")} with no argument to see available skills.`,
     );
     return 1;
   }

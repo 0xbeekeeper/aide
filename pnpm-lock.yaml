@@ -20,16 +20,16 @@ importers:
 
   packages/cli:
     dependencies:
-      '@chief-of-staff/mcp-hub':
+      '@aide-os/mcp-hub':
         specifier: workspace:*
         version: link:../mcp-hub
-      '@chief-of-staff/mcp-telegram':
+      '@aide-os/mcp-telegram':
         specifier: workspace:*
         version: link:../mcp-telegram
-      '@chief-of-staff/storage':
+      '@aide-os/storage':
         specifier: workspace:*
         version: link:../storage
-      '@chief-of-staff/types':
+      '@aide-os/types':
         specifier: workspace:*
         version: link:../types
       commander:
@@ -41,10 +41,10 @@ importers:
 
   packages/mcp-hub:
     dependencies:
-      '@chief-of-staff/storage':
+      '@aide-os/storage':
         specifier: workspace:*
         version: link:../storage
-      '@chief-of-staff/types':
+      '@aide-os/types':
         specifier: workspace:*
         version: link:../types
       '@modelcontextprotocol/sdk':
@@ -56,7 +56,7 @@ importers:
 
   packages/mcp-telegram:
     dependencies:
-      '@chief-of-staff/types':
+      '@aide-os/types':
         specifier: workspace:*
         version: link:../types
       '@modelcontextprotocol/sdk':
@@ -74,7 +74,7 @@ importers:
 
   packages/storage:
     dependencies:
-      '@chief-of-staff/types':
+      '@aide-os/types':
         specifier: workspace:*
         version: link:../types
 

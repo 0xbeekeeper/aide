@@ -8,7 +8,7 @@ import type {
   StyleSample,
   DailyBrief,
   Style,
-} from "@chief-of-staff/types";
+} from "@aide-os/types";
 import type { StorageAdapter, TriageQuery, TaskQuery } from "./adapter.js";
 import { defaultConfigDir } from "./paths.js";
 

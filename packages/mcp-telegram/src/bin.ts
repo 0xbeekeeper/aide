@@ -4,7 +4,7 @@ import { createTelegramServer } from "./server.js";
 import { closeClient } from "./client.js";
 
 async function main() {
-  const allowSend = process.env["COS_TG_ALLOW_SEND"] === "1";
+  const allowSend = process.env["AIDE_TG_ALLOW_SEND"] === "1";
   const server = createTelegramServer({ readOnly: !allowSend });
   const transport = new StdioServerTransport();
   await server.connect(transport);

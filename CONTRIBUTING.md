@@ -1,4 +1,4 @@
-# Contributing to chief-of-staff
+# Contributing to aide
 
 Thanks for your interest. This project is small and opinionated — contributions should preserve its core design principles.
 
@@ -7,7 +7,7 @@ Thanks for your interest. This project is small and opinionated — contribution
 1. **Framework-agnostic.** Nothing in `skills/` or `packages/` should depend on a specific agent host. If it only works on Claude Code, it doesn't belong.
 2. **MCP + Skills only.** No hooks, no hidden state, no runtime-injected context.
 3. **Pluggable storage.** New features should go through `StorageAdapter`, not hard-code filesystem paths.
-4. **Types are the contract.** If you add a concept, extend `@chief-of-staff/types` first; then wire it into skills + hub + CLI in that order.
+4. **Types are the contract.** If you add a concept, extend `@aide-os/types` first; then wire it into skills + hub + CLI in that order.
 
 ## Development
 
@@ -20,20 +20,20 @@ pnpm -r typecheck
 Run a specific package in dev:
 
 ```bash
-pnpm --filter @chief-of-staff/cli dev -- run triage
+pnpm --filter @aide-os/cli dev -- run triage
 ```
 
 Run the mcp-hub server locally:
 
 ```bash
-pnpm --filter @chief-of-staff/mcp-hub dev
+pnpm --filter @aide-os/mcp-hub dev
 ```
 
 ## Adding a skill
 
 1. Create `skills/<name>/SKILL.md` with Anthropic Skills frontmatter (`name`, `description`).
-2. Reference only tools exposed by existing MCP servers (`chief-of-staff-hub`, `chief-of-staff-telegram`), or extend one.
-3. Add an alias to `packages/cli/src/skills.ts` so it's runnable via `cos run <alias>`.
+2. Reference only tools exposed by existing MCP servers (`aide-hub`, `aide-telegram`), or extend one.
+3. Add an alias to `packages/cli/src/skills.ts` so it's runnable via `aide run <alias>`.
 4. Update `README.md` and any relevant `docs/install-*.md`.
 
 ## Adding an MCP server
@@ -42,7 +42,7 @@ pnpm --filter @chief-of-staff/mcp-hub dev
 2. Use `@modelcontextprotocol/sdk`'s `McpServer` and `StdioServerTransport`.
 3. Input schemas via `zod`.
 4. Tools should return `{ content: [{ type: "text", text: JSON.stringify(...) }] }` (wrap in a `json()` helper).
-5. Add a dependency on `@chief-of-staff/types`.
+5. Add a dependency on `@aide-os/types`.
 6. Document the tools in `docs/architecture.md`.
 
 ## Adding a host

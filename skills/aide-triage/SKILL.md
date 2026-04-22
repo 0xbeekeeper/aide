@@ -1,9 +1,9 @@
 ---
-name: cos-triage
-description: Triage your unread Telegram messages — decide priority, intent, whether a reply is needed. Use when the user asks for an inbox scan, "what needs my attention", "triage my messages", or when `cos run triage` is invoked. Produces a structured Triage record per unread message and saves it to the hub.
+name: aide-triage
+description: Triage your unread Telegram messages — decide priority, intent, whether a reply is needed. Use when the user asks for an inbox scan, "what needs my attention", "triage my messages", or when `aide run triage` is invoked. Produces a structured Triage record per unread message and saves it to the hub.
 ---
 
-# cos-triage
+# aide-triage
 
 You are triaging unread messages from a communication channel (Telegram) on behalf of the user. Your goal is to produce one `Triage` record per unread message and persist it to the hub. The user will later see the triage as a prioritized list.
 
@@ -14,26 +14,26 @@ Use this skill when the user says any of:
 - "what needs my attention"
 - "scan Telegram"
 - "run triage"
-- or when invoked programmatically by `cos run triage`.
+- or when invoked programmatically by `aide run triage`.
 
 ## Required MCP tools
 
 This skill requires two MCP servers to be configured in the host runtime:
 
-1. **`chief-of-staff-telegram`** — provides `list_unread`, `get_chat_context`.
-2. **`chief-of-staff-hub`** — provides `save_triage`, `list_pending`.
+1. **`aide-telegram`** — provides `list_unread`, `get_chat_context`.
+2. **`aide-hub`** — provides `save_triage`, `list_pending`.
 
-If either is missing, stop and tell the user to run `cos doctor` to diagnose.
+If either is missing, stop and tell the user to run `aide doctor` to diagnose.
 
 ## Workflow
 
 ### Step 1. Fetch unread messages
 
-Call `chief-of-staff-telegram.list_unread` with:
+Call `aide-telegram.list_unread` with:
 - `since`: now minus 24 hours (ISO 8601)
 - `limit`: 50
 
-You will receive a `Message[]` array matching the `@chief-of-staff/types` schema.
+You will receive a `Message[]` array matching the `@aide-os/types` schema.
 
 If the array is empty, tell the user "Inbox clear — nothing unread in the last 24h" and stop.
 
@@ -50,13 +50,13 @@ For every message produced by step 1, independently decide the following fields 
 | `reasoning` | One-sentence why you picked this priority/intent (for audit) |
 | `confidence` | 0.0–1.0 — how sure you are of the above |
 
-**Fetch context only when needed.** If the message alone is ambiguous, call `chief-of-staff-telegram.get_chat_context` with `chat_id` and `n: 10` to pull the last 10 messages in that chat before deciding. Don't fetch context by default (too expensive).
+**Fetch context only when needed.** If the message alone is ambiguous, call `aide-telegram.get_chat_context` with `chat_id` and `n: 10` to pull the last 10 messages in that chat before deciding. Don't fetch context by default (too expensive).
 
 **Never call `send_message`.** This skill only reads and triages.
 
 ### Step 3. Save to hub
 
-For each `Triage`, call `chief-of-staff-hub.save_triage` with the full record. Include `created_at` as the current ISO 8601 timestamp and `message_id` matching the input.
+For each `Triage`, call `aide-hub.save_triage` with the full record. Include `created_at` as the current ISO 8601 timestamp and `message_id` matching the input.
 
 ### Step 4. Report to user
 
@@ -78,11 +78,11 @@ After all messages are triaged, output a markdown summary grouped by priority:
 - ...
 ```
 
-End with: "Saved <N> triage records to the hub. Next: run `cos run reply` to generate drafts."
+End with: "Saved <N> triage records to the hub. Next: run `aide run reply` to generate drafts."
 
 ## Output schema
 
-Every `Triage` record must conform to the `Triage` type from `@chief-of-staff/types`:
+Every `Triage` record must conform to the `Triage` type from `@aide-os/types`:
 
 ```ts
 {
@@ -109,6 +109,6 @@ Every `Triage` record must conform to the `Triage` type from `@chief-of-staff/ty
 
 ## Not in scope
 
-- Generating reply drafts → that's `cos-reply`.
-- Extracting tasks → that's `cos-task`.
+- Generating reply drafts → that's `aide-reply`.
+- Extracting tasks → that's `aide-task`.
 - Sending messages → never, in any skill.

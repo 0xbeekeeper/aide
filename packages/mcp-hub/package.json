@@ -1,11 +1,11 @@
 {
-  "name": "@chief-of-staff/mcp-hub",
+  "name": "@aide-os/mcp-hub",
   "version": "0.0.0",
-  "description": "MCP server exposing chief-of-staff triage / task / draft / style / brief state",
+  "description": "MCP server exposing aide triage / task / draft / style / brief state",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "cos-mcp-hub": "./dist/bin.js"
+    "aide-mcp-hub": "./dist/bin.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,8 +26,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@chief-of-staff/storage": "workspace:*",
-    "@chief-of-staff/types": "workspace:*",
+    "@aide-os/storage": "workspace:*",
+    "@aide-os/types": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.20.0",
     "zod": "^3.24.1"
   }

@@ -1,6 +1,6 @@
 # Writing a custom storage adapter
 
-Everything in chief-of-staff that needs persistence goes through `StorageAdapter`. Swap the filesystem default for Notion, Postgres, SQLite, or anything else by implementing the interface.
+Everything in aide that needs persistence goes through `StorageAdapter`. Swap the filesystem default for Notion, Postgres, SQLite, or anything else by implementing the interface.
 
 ## Interface
 
@@ -31,7 +31,7 @@ interface StorageAdapter {
 ## Notion adapter sketch
 
 ```ts
-import type { StorageAdapter, Triage, Task } from "@chief-of-staff/storage";
+import type { StorageAdapter, Triage, Task } from "@aide-os/storage";
 import { Client } from "@notionhq/client";
 
 export class NotionAdapter implements StorageAdapter {
@@ -63,7 +63,7 @@ export class NotionAdapter implements StorageAdapter {
 `mcp-hub` accepts an optional `storage` in `createHubServer()`. Point it at your adapter:
 
 ```ts
-import { createHubServer } from "@chief-of-staff/mcp-hub";
+import { createHubServer } from "@aide-os/mcp-hub";
 import { NotionAdapter } from "./notion.js";
 
 const storage = new NotionAdapter(new Client({ auth: process.env.NOTION_TOKEN! }), {
@@ -78,7 +78,7 @@ const server = createHubServer({ storage });
 // ... standard stdio transport
 ```
 
-Ship this as `@chief-of-staff/mcp-hub-notion` if you want a reusable package, or run it locally as a bespoke script.
+Ship this as `@aide-os/mcp-hub-notion` if you want a reusable package, or run it locally as a bespoke script.
 
 ## Guidance
 

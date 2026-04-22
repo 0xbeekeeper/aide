@@ -1,7 +1,7 @@
 {
-  "name": "@chief-of-staff/types",
+  "name": "@aide-os/types",
   "version": "0.0.0",
-  "description": "Shared TypeScript contract for chief-of-staff skills and MCP servers",
+  "description": "Shared TypeScript contract for aide skills and MCP servers",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

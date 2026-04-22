@@ -1,11 +1,11 @@
 ---
-name: cos-reply
-description: Generate 3 candidate reply drafts per needs-reply message in the user's voice across professional / push / casual styles. Use when the user asks to "draft replies", "write replies to pending messages", or when `cos run reply` is invoked. Consumes triage records from the hub, reads style samples, writes drafts back to the hub.
+name: aide-reply
+description: Generate 3 candidate reply drafts per needs-reply message in the user's voice across professional / push / casual styles. Use when the user asks to "draft replies", "write replies to pending messages", or when `aide run reply` is invoked. Consumes triage records from the hub, reads style samples, writes drafts back to the hub.
 ---
 
-# cos-reply
+# aide-reply
 
-You draft candidate replies for messages that `cos-triage` marked as `needs_reply: true`. For each such message you produce exactly **3 drafts** — one per style — and save them to the hub. You do **not** send anything.
+You draft candidate replies for messages that `aide-triage` marked as `needs_reply: true`. For each such message you produce exactly **3 drafts** — one per style — and save them to the hub. You do **not** send anything.
 
 ## When to run
 
@@ -13,28 +13,28 @@ Triggers:
 - "draft replies for my pending messages"
 - "write replies"
 - "reply to my inbox"
-- `cos run reply`
+- `aide run reply`
 
 ## Required MCP tools
 
-1. **`chief-of-staff-telegram`** — `get_chat_context` (to read the thread if needed)
-2. **`chief-of-staff-hub`** — `list_pending`, `list_style_samples`, `save_draft`
+1. **`aide-telegram`** — `get_chat_context` (to read the thread if needed)
+2. **`aide-hub`** — `list_pending`, `list_style_samples`, `save_draft`
 
-If either is missing, stop and tell the user to run `cos doctor`.
+If either is missing, stop and tell the user to run `aide doctor`.
 
 ## Workflow
 
 ### Step 1. Fetch pending triage records
 
-Call `chief-of-staff-hub.list_pending` with:
+Call `aide-hub.list_pending` with:
 - `since`: now minus 24h
 - `limit`: 30
 
-You receive `Triage[]`. If empty, tell the user "No pending messages. Run `cos run triage` first." and stop.
+You receive `Triage[]`. If empty, tell the user "No pending messages. Run `aide run triage` first." and stop.
 
 ### Step 2. Load style samples once
 
-Call `chief-of-staff-hub.list_style_samples` three times (or once without filter and group client-side), one per style, with `limit: 10`. Cache the result for this run.
+Call `aide-hub.list_style_samples` three times (or once without filter and group client-side), one per style, with `limit: 10`. Cache the result for this run.
 
 If a style has zero samples, fall back to a **generic baseline**:
 - `professional`: concise, polite, action-oriented, no emojis
@@ -45,7 +45,7 @@ If a style has zero samples, fall back to a **generic baseline**:
 
 For each `Triage` record:
 
-1. **Pull thread context** — call `chief-of-staff-telegram.get_chat_context` with `chat_id` and `n: 5` to get the last 5 messages. Use this to understand what's being discussed and who's asking what. Skip this call if `triage.confidence >= 0.9` and the summary is unambiguous.
+1. **Pull thread context** — call `aide-telegram.get_chat_context` with `chat_id` and `n: 5` to get the last 5 messages. Use this to understand what's being discussed and who's asking what. Skip this call if `triage.confidence >= 0.9` and the summary is unambiguous.
 
 2. **Generate 3 drafts** — produce exactly one draft per style (`professional`, `push`, `casual`). Each draft must:
    - Directly respond to the last message in the thread
@@ -58,7 +58,7 @@ For each `Triage` record:
 
 ### Step 4. Save drafts to hub
 
-For each draft, call `chief-of-staff-hub.save_draft` with:
+For each draft, call `aide-hub.save_draft` with:
 
 ```ts
 {
@@ -102,10 +102,10 @@ End with: `Saved <3N> drafts to the hub. Copy/paste the one you like into Telegr
 3. **Match the language of the incoming message** — do not translate.
 4. **Redact sensitive content** — if the thread contains secrets, leave them out of the draft (don't echo API keys / seed phrases / private keys back).
 5. **If triage.priority === "ignore" or "spam"** → skip that message entirely, don't draft.
-6. **If triage.confidence < 0.5** → skip, tell the user "triage was uncertain; re-run `cos run triage` on this thread for better context."
+6. **If triage.confidence < 0.5** → skip, tell the user "triage was uncertain; re-run `aide run triage` on this thread for better context."
 
 ## Not in scope
 
 - Sending messages → manual by the user, or a future opt-in skill.
-- Rewriting the user's own style samples → that's `cos-style-extract`.
-- Creating tasks → that's `cos-task`.
+- Rewriting the user's own style samples → that's `aide-style-extract`.
+- Creating tasks → that's `aide-task`.

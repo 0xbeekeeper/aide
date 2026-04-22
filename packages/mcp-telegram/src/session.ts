@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 export function sessionPath(): string {
   const xdg = process.env["XDG_CONFIG_HOME"];
   const base = xdg && xdg.length > 0 ? xdg : join(homedir(), ".config");
-  return join(base, "chief-of-staff", "telegram.session");
+  return join(base, "aide", "telegram.session");
 }
 
 export async function loadSession(): Promise<string> {
@@ -32,7 +32,7 @@ export function readCreds(): TgCreds {
   const apiHash = process.env["TG_API_HASH"];
   if (!apiIdStr || !apiHash) {
     throw new Error(
-      "Missing TG_API_ID / TG_API_HASH env vars. Get them at https://my.telegram.org then run `cos init`.",
+      "Missing TG_API_ID / TG_API_HASH env vars. Get them at https://my.telegram.org then run `aide init`.",
     );
   }
   const apiId = Number(apiIdStr);

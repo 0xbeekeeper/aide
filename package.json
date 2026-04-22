@@ -1,8 +1,8 @@
 {
-  "name": "chief-of-staff",
+  "name": "aide",
   "version": "0.0.0",
   "private": true,
-  "description": "AI Chief of Staff — framework-agnostic skill pack + MCP servers for personal work copilot",
+  "description": "AI Aide — framework-agnostic skill pack + MCP servers for personal work copilot",
   "license": "MIT",
   "packageManager": "pnpm@10.25.0",
   "engines": {

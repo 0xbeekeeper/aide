@@ -5,7 +5,7 @@ import type {
   StyleSample,
   DailyBrief,
   Style,
-} from "@chief-of-staff/types";
+} from "@aide-os/types";
 
 export interface TriageQuery {
   since?: string;

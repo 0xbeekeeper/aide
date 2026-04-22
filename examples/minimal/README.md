@@ -5,14 +5,14 @@ Smallest possible setup: triage only, filesystem storage, no Notion.
 ## Quick start
 
 ```bash
-cd /path/to/chief-of-staff
+cd /path/to/aide
 pnpm install && pnpm -r build
-pnpm link --global --filter @chief-of-staff/cli
-pnpm link --global --filter @chief-of-staff/mcp-hub
-pnpm link --global --filter @chief-of-staff/mcp-telegram
+pnpm link --global --filter @aide-os/cli
+pnpm link --global --filter @aide-os/mcp-hub
+pnpm link --global --filter @aide-os/mcp-telegram
 
-cos init
-cos run triage
+aide init
+aide run triage
 ```
 
 ## Claude Code settings.json
@@ -20,9 +20,9 @@ cos run triage
 ```json
 {
   "mcpServers": {
-    "chief-of-staff-hub": { "command": "cos-mcp-hub" },
-    "chief-of-staff-telegram": {
-      "command": "cos-mcp-telegram",
+    "aide-hub": { "command": "aide-mcp-hub" },
+    "aide-telegram": {
+      "command": "aide-mcp-telegram",
       "env": {
         "TG_API_ID": "1234567",
         "TG_API_HASH": "abcd1234…"
@@ -32,10 +32,10 @@ cos run triage
 }
 ```
 
-Install only the `cos-triage` skill:
+Install only the `aide-triage` skill:
 
 ```bash
-ln -sf "$(pwd)/skills/cos-triage" "$HOME/.claude/skills/cos-triage"
+ln -sf "$(pwd)/skills/aide-triage" "$HOME/.claude/skills/aide-triage"
 ```
 
-That's it. You now have triage-only chief-of-staff. Run `cos run triage` and review the output at `~/.config/chief-of-staff/triage/*.json`.
+That's it. You now have triage-only aide. Run `aide run triage` and review the output at `~/.config/aide/triage/*.json`.

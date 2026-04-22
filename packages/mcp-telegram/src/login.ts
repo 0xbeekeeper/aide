@@ -7,7 +7,7 @@ import { readCreds, saveSession, sessionPath } from "./session.js";
 async function main() {
   const { apiId, apiHash } = readCreds();
 
-  console.log("\n▶ chief-of-staff — Telegram login\n");
+  console.log("\n▶ aide — Telegram login\n");
   console.log(
     "This signs you in with a Telegram *user* session (not a bot).\n" +
       "Your session string will be saved at:",
@@ -34,7 +34,7 @@ async function main() {
   await saveSession(sessionString);
   await client.disconnect();
 
-  console.log("\n✓ Session saved. You can now run `cos run triage`.\n");
+  console.log("\n✓ Session saved. You can now run `aide run triage`.\n");
 }
 
 main().catch((err) => {

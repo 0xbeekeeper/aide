@@ -1,16 +1,16 @@
-# chief-of-staff
+# aide
 
-> AI Chief of Staff — a framework-agnostic skill pack + MCP servers that turn any agent runtime (Claude Code, OpenCLAW, Cursor, Gemini CLI, Codex) into your personal work copilot.
+> AI Aide — a framework-agnostic skill pack + MCP servers that turn any agent runtime (Claude Code, OpenCLAW, Cursor, Gemini CLI, Codex) into your personal work copilot.
 
 **Status:** 🟡 alpha — MVP complete, needs real-world validation.
 
 ## What it does
 
-1. **Triage** (`cos run triage`) — reads your Telegram inbox, decides what needs a reply and how urgent
-2. **Reply** (`cos run reply`) — drafts 3 candidate replies per message in your voice (professional / push / casual)
-3. **Task** (`cos run task`) — extracts actionable tasks, optionally syncs to Notion
-4. **Brief** (`cos run brief`) — morning digest of the last 24h
-5. **Style** (`cos run extract-style`) — learns your voice from your own Telegram history
+1. **Triage** (`aide run triage`) — reads your Telegram inbox, decides what needs a reply and how urgent
+2. **Reply** (`aide run reply`) — drafts 3 candidate replies per message in your voice (professional / push / casual)
+3. **Task** (`aide run task`) — extracts actionable tasks, optionally syncs to Notion
+4. **Brief** (`aide run brief`) — morning digest of the last 24h
+5. **Style** (`aide run extract-style`) — learns your voice from your own Telegram history
 
 ## Why it's framework-agnostic
 
@@ -19,33 +19,33 @@ The brain is just `SKILL.md` files following the Anthropic Skills spec. The tool
 ## Quick start
 
 ```bash
-git clone https://github.com/<your-fork>/chief-of-staff.git
-cd chief-of-staff
+git clone https://github.com/<your-fork>/aide.git
+cd aide
 pnpm install && pnpm -r build
 
 # link CLI + MCP servers onto your PATH
-pnpm link --global --filter @chief-of-staff/cli
-pnpm link --global --filter @chief-of-staff/mcp-hub
-pnpm link --global --filter @chief-of-staff/mcp-telegram
+pnpm link --global --filter @aide-os/cli
+pnpm link --global --filter @aide-os/mcp-hub
+pnpm link --global --filter @aide-os/mcp-telegram
 
 # symlink all skills into your agent host
-for s in cos-triage cos-reply cos-task cos-brief cos-style-extract; do
+for s in aide-triage aide-reply aide-task aide-brief aide-style-extract; do
   ln -sf "$(pwd)/skills/$s" "$HOME/.claude/skills/$s"
 done
 
 # add MCP servers to your host's config
-cos print-mcp-config claude-code   # emit snippet for ~/.claude/settings.json
+aide print-mcp-config claude-code   # emit snippet for ~/.claude/settings.json
 
 # first-time setup (asks for TG_API_ID / TG_API_HASH from my.telegram.org)
-cos init
+aide init
 
 # verify
-cos doctor
+aide doctor
 
 # go
-cos run extract-style    # one-time
-cos run triage
-cos run brief
+aide run extract-style    # one-time
+aide run triage
+aide run brief
 ```
 
 Full walkthrough: [`docs/install-claude-code.md`](./docs/install-claude-code.md).
@@ -54,12 +54,12 @@ Full walkthrough: [`docs/install-claude-code.md`](./docs/install-claude-code.md)
 
 | Package | Purpose |
 |---|---|
-| `@chief-of-staff/types` | Shared contract (Message / Triage / ReplyDraft / Task / StyleSample / DailyBrief) |
-| `@chief-of-staff/storage` | Pluggable persistence (filesystem default; swap for Notion / SQLite via `StorageAdapter`) |
-| `@chief-of-staff/mcp-hub` | MCP server exposing hub CRUD (13 tools) |
-| `@chief-of-staff/mcp-telegram` | MCP server wrapping gramjs user session |
-| `@chief-of-staff/cli` | `cos` CLI — `init`, `run`, `doctor`, `status`, `print-mcp-config` |
-| `skills/cos-*` | 5 SKILL.md files, runtime-agnostic |
+| `@aide-os/types` | Shared contract (Message / Triage / ReplyDraft / Task / StyleSample / DailyBrief) |
+| `@aide-os/storage` | Pluggable persistence (filesystem default; swap for Notion / SQLite via `StorageAdapter`) |
+| `@aide-os/mcp-hub` | MCP server exposing hub CRUD (13 tools) |
+| `@aide-os/mcp-telegram` | MCP server wrapping gramjs user session |
+| `@aide-os/cli` | `aide` CLI — `init`, `run`, `doctor`, `status`, `print-mcp-config` |
+| `skills/aide-*` | 5 SKILL.md files, runtime-agnostic |
 
 ## Documentation
 
@@ -82,20 +82,20 @@ Full walkthrough: [`docs/install-claude-code.md`](./docs/install-claude-code.md)
 - Full monorepo with typed contracts
 - 2 MCP servers (hub, telegram), stdio transport, 16 tools total
 - 5 skills covering triage → reply → task → brief → style
-- `cos` CLI with runtime auto-detection
+- `aide` CLI with runtime auto-detection
 - Docs for Claude Code / OpenCLAW / Cursor
 
 🟡 Not yet
 - End-to-end validation with a real Telegram account + 48h rolling test
 - Notion storage adapter (pattern documented, not implemented)
-- OpenCLAW runtime adapter in `cos` (falls back to manual instructions)
+- OpenCLAW runtime adapter in `aide` (falls back to manual instructions)
 - npm package publication
 - Style extraction UI / review flow
 
 🔴 Known risks
 - Telegram user session usage violates ToS if used for automation at scale. Keep this personal and low-frequency.
 - Chat content is sent to your LLM — no built-in redaction yet (mentioned in skills but not enforced).
-- Session string is stored at `~/.config/chief-of-staff/telegram.session` with `0600` perms — protect your machine.
+- Session string is stored at `~/.config/aide/telegram.session` with `0600` perms — protect your machine.
 
 ## License
 

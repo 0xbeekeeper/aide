@@ -7,9 +7,9 @@ export async function printMcpConfigCommand(
   const env = await loadEnv();
   const t = target ?? "claude-code";
 
-  const hub = { command: "cos-mcp-hub", args: [] as string[] };
+  const hub = { command: "aide-mcp-hub", args: [] as string[] };
   const tg = {
-    command: "cos-mcp-telegram",
+    command: "aide-mcp-telegram",
     args: [] as string[],
     env: {
       TG_API_ID: env.TG_API_ID ?? "<set me>",
@@ -20,8 +20,8 @@ export async function printMcpConfigCommand(
   if (t === "claude-code" || t === "openclaw") {
     const snippet = {
       mcpServers: {
-        "chief-of-staff-hub": hub,
-        "chief-of-staff-telegram": tg,
+        "aide-hub": hub,
+        "aide-telegram": tg,
       },
     };
     console.log(
@@ -39,7 +39,7 @@ export async function printMcpConfigCommand(
     );
     console.log(
       JSON.stringify(
-        { "chief-of-staff-hub": hub, "chief-of-staff-telegram": tg },
+        { "aide-hub": hub, "aide-telegram": tg },
         null,
         2,
       ),

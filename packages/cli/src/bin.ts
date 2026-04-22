@@ -9,8 +9,8 @@ import type { Runtime } from "./runtime.js";
 
 const program = new Command();
 program
-  .name("cos")
-  .description("chief-of-staff — your AI work copilot")
+  .name("aide")
+  .description("aide — your AI work copilot")
   .version("0.0.0");
 
 program
