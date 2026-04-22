@@ -3,9 +3,6 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { loadEnv, saveEnv } from "../env.js";
 import { configDir, sessionFilePath } from "../paths.js";
-import { createRequire } from "node:module";
-
-const require = createRequire(import.meta.url);
 
 async function prompt(q: string, secret = false): Promise<string> {
   const readline = await import("node:readline");
@@ -84,15 +81,21 @@ export async function initCommand(): Promise<number> {
   }
 
   console.log(kleur.bold("\n▶ Telegram login\n"));
-  const loginBin = require.resolve(
-    "@aide-os/mcp-telegram/dist/login.js",
-  );
   const code = await new Promise<number>((resolve) => {
-    const child = spawn(process.execPath, [loginBin], {
+    const child = spawn("aide-tg-login", [], {
       stdio: "inherit",
       env: { ...process.env, TG_API_ID: apiId, TG_API_HASH: apiHash },
     });
     child.on("exit", (c) => resolve(c ?? 0));
+    child.on("error", (err) => {
+      console.error(
+        kleur.red(
+          `failed to spawn 'aide-tg-login': ${err.message}\n` +
+            `Make sure the aide-tg-login binary is on your PATH (run pnpm link --global in packages/mcp-telegram).`,
+        ),
+      );
+      resolve(127);
+    });
   });
 
   if (code !== 0) {
