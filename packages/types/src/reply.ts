@@ -10,6 +10,8 @@ export interface ReplyDraft {
   source_excerpt?: string;
   /** Localized version of source_excerpt when AIDE_LANG differs from the source language. Shown in cards. */
   source_excerpt_display?: string;
+  /** One-paragraph summary of the 5 messages before + 5 messages after the triaged one, in AIDE_LANG. Shown on the card as 背景. */
+  context_summary?: string;
   style: Style;
   text: string;
   confidence: number;

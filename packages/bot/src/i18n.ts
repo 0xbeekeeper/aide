@@ -30,6 +30,7 @@ interface Strings {
   card_header_private: (sender: string) => string;
   card_header_group: (sender: string, chat: string) => string;
   card_said_label: string;
+  card_context_label: string;
   suggested_reply_label: (style: string) => string;
   btn_send: string;
   btn_cycle: string;
@@ -79,6 +80,7 @@ const EN: Strings = {
   card_header_group: (sender: string, chat: string) =>
     `<b>${sender}</b>  ·  ${chat}`,
   card_said_label: "Said",
+  card_context_label: "Background",
   suggested_reply_label: (style: string) => {
     const label =
       style === "professional"
@@ -141,6 +143,7 @@ const ZH: Strings = {
   card_header_private: (sender) => `<b>${sender}</b>  ·  私信`,
   card_header_group: (sender, chat) => `<b>${sender}</b>  ·  ${chat}`,
   card_said_label: "对方说",
+  card_context_label: "背景",
   suggested_reply_label: (style) => {
     const label =
       style === "professional" ? "专业" : style === "push" ? "直接" : "随意";

@@ -45,6 +45,7 @@ const ReplyDraftSchema = z.object({
   sender_name: z.string().optional(),
   source_excerpt: z.string().max(240).optional(),
   source_excerpt_display: z.string().max(280).optional(),
+  context_summary: z.string().max(600).optional(),
   style: StyleSchema,
   text: z.string(),
   confidence: z.number().min(0).max(1),

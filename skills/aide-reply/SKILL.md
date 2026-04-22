@@ -45,16 +45,23 @@ If a style has zero samples, fall back to a **generic baseline**:
 
 For each `Triage` record:
 
-1. **Pull thread context** — call `aide-telegram.get_chat_context` with `chat_id` and `n: 5` to get the last 5 messages. Use this to understand what's being discussed and who's asking what. Skip this call if `triage.confidence >= 0.9` and the summary is unambiguous.
+1. **Pull anchored thread context** — call `aide-telegram.get_chat_context` with:
+   - `chat_id`: triage.chat_id
+   - `anchor_message_id`: triage.message_id
+   - `before`: 5
+   - `after`: 5
+   This returns the 5 messages before the triaged one, the triaged one itself, and up to 5 after — chronological, anchored. Use this whenever you draft, not just for ambiguous cases. It is also the source for the `context_summary` field below.
 
-2. **Generate 3 drafts** — produce exactly one draft per style (`professional`, `push`, `casual`). Each draft must:
+2. **Summarize context into one Chinese paragraph** (when `AIDE_LANG=zh`) — read the surrounding messages and produce a ≤3-sentence `context_summary` in Chinese that answers: "前因后果是什么？别人讨论到哪了？对方这条消息发出前的语境是什么？". Keep proper nouns verbatim. If there's not enough context (e.g. fresh thread), write a single sentence noting that. This is what the user reads under 背景 on the card.
+
+3. **Generate 3 drafts** — produce exactly one draft per style (`professional`, `push`, `casual`). Each draft must:
    - Directly respond to the last message in the thread
    - Be in the user's voice — imitate patterns from the style samples (sentence length, punctuation, signature phrases, emoji density)
    - Be ready to send as-is — no `[placeholder]` text, no TODOs
    - Stay ≤ 280 chars unless the thread genuinely needs more
    - Match the language of the incoming message (if message is in Chinese, reply in Chinese)
 
-3. **Set confidence** — 0.0–1.0 for each draft. Below 0.5 usually means "I don't have enough context, user should think about this one themselves."
+4. **Set confidence** — 0.0–1.0 for each draft. Below 0.5 usually means "I don't have enough context, user should think about this one themselves."
 
 ### Step 4. Save drafts to hub
 
@@ -69,6 +76,7 @@ For each draft, call `aide-hub.save_draft` with the **full** schema below — `s
   sender_name: "<sender display_name from the last message in the thread>",
   source_excerpt: "<≤240-char quote of the message being replied to, VERBATIM in original language>",
   source_excerpt_display: "<ALWAYS set this when AIDE_LANG is set. It is the user's reading version of what the counterpart said. If AIDE_LANG=zh, write in Chinese (translate faithfully if source was English; lightly polish if already Chinese; ≤280 chars). If AIDE_LANG=en, write in English. Keep proper nouns / usernames / product names verbatim. Strip decorative marks but keep meaning. This field is what the bot card shows — it IS the main quote the user reads.>",
+  context_summary: "<From Step 2. ≤600 chars, in AIDE_LANG. One paragraph summarizing the 5 messages before + the triaged message + up to 5 after. Same `context_summary` repeated on all 3 drafts for the same message.>",
   style: "professional" | "push" | "casual",
   text: "<the draft>",
   confidence: 0.0-1.0,

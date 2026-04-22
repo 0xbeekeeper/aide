@@ -88,6 +88,13 @@ export function renderCard(
     lines.push(`<blockquote>${esc(quote)}</blockquote>`);
   }
 
+  // Background — summary of ±5 messages around the triaged one
+  if (selected.context_summary) {
+    lines.push("");
+    lines.push(`<b>${esc(s.card_context_label)}</b>`);
+    lines.push(`<blockquote>${esc(selected.context_summary)}</blockquote>`);
+  }
+
   // Suggested reply
   lines.push("");
   lines.push(`<b>${esc(s.suggested_reply_label(selected.style))}</b>`);
