@@ -27,6 +27,11 @@ import {
   installLaunchdCommand,
   uninstallLaunchdCommand,
 } from "./commands/install-launchd.js";
+import {
+  notionStatusCommand,
+  notionSetTasksDbCommand,
+  notionClearTasksDbCommand,
+} from "./commands/notion.js";
 import type { Runtime } from "./runtime.js";
 
 const program = new Command();
@@ -162,6 +167,27 @@ program
   .command("uninstall-launchd")
   .description("remove the launchd agents installed by install-launchd")
   .action(async () => process.exit(await uninstallLaunchdCommand()));
+
+const notion = program
+  .command("notion")
+  .description("Notion integration — check auth, point at a tasks DB");
+
+notion
+  .command("status", { isDefault: true })
+  .description("show Notion MCP auth + configured tasks DB")
+  .action(async () => process.exit(await notionStatusCommand()));
+
+notion
+  .command("set-tasks-db <id>")
+  .description("tell aide-task which Notion database to sync tasks into")
+  .action(async (id: string) =>
+    process.exit(await notionSetTasksDbCommand(id)),
+  );
+
+notion
+  .command("clear-tasks-db")
+  .description("forget the tasks DB — stop syncing tasks to Notion")
+  .action(async () => process.exit(await notionClearTasksDbCommand()));
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);

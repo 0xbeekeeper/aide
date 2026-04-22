@@ -74,12 +74,17 @@ For each task, call `aide-hub.save_task`.
 
 ### Step 6 (optional). Sync to Notion
 
-If a Notion MCP is available AND the user has confirmed a tasks database (see `Notion:find` or `Notion:tasks:setup`):
+Notion sync is **opt-in** via `AIDE_NOTION_TASKS_DB` (env var — the Notion database id for the user's tasks DB). If the var is unset, skip sync silently.
 
-1. For each open task with no `notion_page_id`, call `Notion:create-task` with the action, owner, deadline.
-2. Extract the returned page_id and re-save the task via `save_task` with `notion_page_id` filled in (so next run won't duplicate).
+When `AIDE_NOTION_TASKS_DB` is set:
 
-If Notion is unavailable or unconfigured, **skip silently** — do not error.
+1. For each open task with no `notion_page_id`:
+   - Use the available Notion MCP tool (`plugin:Notion:notion.*` — typically an `API-post-page` / `create-page` variant) to create a page in `AIDE_NOTION_TASKS_DB`.
+   - Properties: `Name`/`Title` = task.action; `Status` = `open`; `Owner` = task.owner; `Deadline` (date prop) = task.deadline if present.
+2. Extract the returned page id and re-save the task via `save_task` with `notion_page_id` filled in (so next run won't duplicate).
+3. If Notion MCP isn't configured / isn't authed / the DB id is wrong, **skip silently** and tell the user once in the summary ("Notion sync skipped: <reason>"). Never fail the whole run.
+
+Do NOT sync to "My Tasks" built-in Notion databases — the Notion API refuses page creation there. Let the user point at a regular database via `AIDE_NOTION_TASKS_DB`.
 
 ### Step 7. Summary to user
 
