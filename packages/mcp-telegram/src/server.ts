@@ -43,15 +43,22 @@ export function createTelegramServer(
     {
       title: "List Unread (or recent) Messages",
       description:
-        "List messages across allowed chats. By default only returns messages Telegram still marks unread. Pass include_read=true to instead scan all messages in the time window regardless of read state. Pass skip_if_replied=true to additionally drop any message the user has already replied to (self sent a later message in the same chat). since = ISO 8601 lower bound.",
+        "List messages across allowed chats. By default only returns messages Telegram still marks unread. Pass include_read=true to instead scan all messages in the time window regardless of read state. Pass skip_if_replied=true to drop any message the user has already replied to. Pass collapse_threads=true (default true) to merge consecutive messages from the same sender within 10 min into a single 'conversation unit' — dramatically reduces noise when someone sends 10 rapid messages. since = ISO 8601 lower bound.",
       inputSchema: {
         since: z.string().optional(),
         limit: z.number().int().positive().max(500).optional(),
         include_read: z.boolean().optional(),
         skip_if_replied: z.boolean().optional(),
+        collapse_threads: z.boolean().optional(),
       },
     },
-    async ({ since, limit, include_read, skip_if_replied }) => {
+    async ({
+      since,
+      limit,
+      include_read,
+      skip_if_replied,
+      collapse_threads,
+    }) => {
       try {
         const client = await getClient();
         const me = await client.getMe();
@@ -60,6 +67,8 @@ export function createTelegramServer(
         const cap = limit ?? 50;
         const scanRead = include_read === true;
         const skipReplied = skip_if_replied === true;
+        const collapse = collapse_threads !== false;
+        const MAX_GAP_MS = 10 * 60 * 1000;
 
         const filter = await new FilesystemAdapter().loadChatFilter();
         const chatAllowed = (chatId: string): boolean => {
@@ -74,6 +83,8 @@ export function createTelegramServer(
         const dialogs = await client.getDialogs({ limit: 100 });
         const out: Message[] = [];
         let droppedReplied = 0;
+        let collapsedGroups = 0;
+        let rawMessages = 0;
 
         for (const dialog of dialogs) {
           const unread = dialog.unreadCount ?? 0;
@@ -85,8 +96,9 @@ export function createTelegramServer(
           const pullLimit = scanRead ? 50 : unread;
 
           const msgs = await client.getMessages(entity, { limit: pullLimit });
-          // msgs are newest-first. Walk them once and track whether the user
-          // has already sent a reply AFTER the candidate message.
+
+          // Pass 1 — filter candidates (non-self, in window, not replied to).
+          const candidates: typeof msgs = [];
           let seenSelfAfter = false;
           for (const m of msgs) {
             if (!m) continue;
@@ -96,18 +108,86 @@ export function createTelegramServer(
               String(m.senderId) === selfId;
             const ts = (m.date ?? 0) * 1000;
             if (senderIsSelf) {
-              // Since we iterate newest→oldest, a self message now means the
-              // user has replied to anything older in this chat.
               seenSelfAfter = true;
-              continue; // never emit self messages
+              continue;
             }
             if (ts < sinceTs) break;
             if (skipReplied && seenSelfAfter) {
               droppedReplied++;
               continue;
             }
-            const mapped = await toMessage(client, m, entity, selfId);
+            candidates.push(m);
+          }
+
+          if (candidates.length === 0) continue;
+
+          // Flip to chronological order for grouping.
+          candidates.reverse();
+          rawMessages += candidates.length;
+
+          if (!collapse) {
+            for (const m of candidates) {
+              const mapped = await toMessage(client, m, entity, selfId);
+              mapped.is_unread = scanRead ? false : true;
+              out.push(mapped);
+              if (out.length >= cap) break;
+            }
+            if (out.length >= cap) break;
+            continue;
+          }
+
+          // Pass 2 — group by (sender, 10-min gap).
+          type Group = (typeof candidates)[number][];
+          const groups: Group[] = [];
+          for (const m of candidates) {
+            const last = groups[groups.length - 1];
+            const lastMsg = last && last.length > 0 ? last[last.length - 1] : undefined;
+            const lastSender =
+              lastMsg && lastMsg.senderId !== undefined && lastMsg.senderId !== null
+                ? String(lastMsg.senderId)
+                : null;
+            const currSender =
+              m.senderId !== undefined && m.senderId !== null
+                ? String(m.senderId)
+                : null;
+            const gap =
+              lastMsg !== undefined
+                ? ((m.date ?? 0) - (lastMsg.date ?? 0)) * 1000
+                : Infinity;
+            if (
+              last !== undefined &&
+              lastSender !== null &&
+              currSender !== null &&
+              lastSender === currSender &&
+              gap < MAX_GAP_MS
+            ) {
+              last.push(m);
+            } else {
+              groups.push([m]);
+            }
+          }
+
+          // Emit one synthesized Message per group (first-message id as key).
+          for (const group of groups) {
+            const first = group[0];
+            if (!first) continue;
+            const mapped = await toMessage(client, first, entity, selfId);
+            const combinedText = group
+              .map((g) => g.message ?? "")
+              .filter((s) => s.length > 0)
+              .join("\n");
+            mapped.text = combinedText;
             mapped.is_unread = scanRead ? false : true;
+            const last = group[group.length - 1];
+            mapped.raw = {
+              ...(mapped.raw ?? {}),
+              collapsed: group.length > 1,
+              message_count: group.length,
+              message_ids: group.map((g) => String(g.id)),
+              first_ts: new Date((first.date ?? 0) * 1000).toISOString(),
+              last_ts: new Date((last?.date ?? 0) * 1000).toISOString(),
+            };
+            if (group.length > 1) collapsedGroups++;
             out.push(mapped);
             if (out.length >= cap) break;
           }
@@ -117,7 +197,13 @@ export function createTelegramServer(
         return json({
           filter_mode: filter.mode,
           mode: scanRead ? "include_read" : "unread_only",
-          dropped_already_replied: droppedReplied,
+          collapsed: collapse,
+          stats: {
+            raw_messages: rawMessages,
+            units: out.length,
+            collapsed_groups: collapsedGroups,
+            dropped_already_replied: droppedReplied,
+          },
           messages: out,
         });
       } catch (e) {

@@ -23,6 +23,10 @@ import {
   profileEditCommand,
   profileResetCommand,
 } from "./commands/profile.js";
+import {
+  installLaunchdCommand,
+  uninstallLaunchdCommand,
+} from "./commands/install-launchd.js";
 import type { Runtime } from "./runtime.js";
 
 const program = new Command();
@@ -146,6 +150,18 @@ profile
   .command("reset")
   .description("overwrite profile with a starter template")
   .action(async () => process.exit(await profileResetCommand()));
+
+program
+  .command("install-launchd")
+  .description(
+    "install macOS launchd agents: triage every 15 min + brief every morning 8:30",
+  )
+  .action(async () => process.exit(await installLaunchdCommand()));
+
+program
+  .command("uninstall-launchd")
+  .description("remove the launchd agents installed by install-launchd")
+  .action(async () => process.exit(await uninstallLaunchdCommand()));
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);

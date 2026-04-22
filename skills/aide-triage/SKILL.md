@@ -30,13 +30,17 @@ If either is missing, stop and tell the user to run `aide doctor` to diagnose.
 ### Step 1. Fetch recent messages
 
 Call `aide-telegram.list_unread` with:
-- `since`: **start of today in the user's local timezone** (ISO 8601). Compute as today's date at 00:00:00 local time. Example: if it's 2026-04-22T14:37:00+08:00 now, pass `2026-04-22T00:00:00+08:00`. Only widen the window if the user explicitly asks (e.g. "scan last 7 days").
+- `since`: **start of today in the user's local timezone** (ISO 8601). Example: if it's 2026-04-22T14:37:00+08:00 now, pass `2026-04-22T00:00:00+08:00`. Only widen the window if the user explicitly asks (e.g. "scan last 7 days"). If the calling prompt specifies a different `since` (via a watermark), use that.
 - `limit`: 200
-- `include_read`: **true** — scan all messages in the window regardless of Telegram's read/unread state. Telegram marks messages read as soon as the user glances at them on any device, which would hide messages the user hasn't actually processed. Always prefer `include_read: true` when applying the user-profile rubric.
+- `include_read`: **true** — scan all messages regardless of Telegram's read/unread state.
+- `skip_if_replied`: **true** — drop any message the user has already replied to.
+- `collapse_threads`: **true** (default) — merge consecutive messages from the same sender within 10 minutes into a single "conversation unit". You'll triage units, not raw messages. Each unit's `text` is the joined body; `raw.message_count` tells you how many messages merged; `raw.first_ts` / `raw.last_ts` bound the thread; `raw.message_ids` lists every merged id (for traceability).
 
-The response shape is `{ filter_mode, mode, messages }` — read `messages` for the array. Messages sent by the user themselves are already filtered out of `include_read` mode, so you only see counterparts' messages.
+The response shape is `{ filter_mode, mode, collapsed, stats, messages }`. `stats.raw_messages` is the count of individual messages considered; `stats.units` is what you'll actually triage; `stats.collapsed_groups` counts how many multi-message threads fused into one unit.
 
-If `messages` is empty, tell the user "Inbox clear — nothing today" (or "nothing in the window") and stop.
+If `messages` is empty, tell the user "Inbox clear — nothing today" and stop.
+
+When triaging a collapsed unit, read the WHOLE `text` to understand the thread. Don't classify on just the first sentence. If the thread contains both a request (tier 1/2) and ambient chatter, keep it as the higher-priority classification.
 
 ### Step 2. For each unread message, decide
 
