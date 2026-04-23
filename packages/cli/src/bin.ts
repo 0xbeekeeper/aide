@@ -31,6 +31,8 @@ import {
   notionStatusCommand,
   notionSetTasksDbCommand,
   notionClearTasksDbCommand,
+  notionSetBriefsPageCommand,
+  notionClearBriefsPageCommand,
 } from "./commands/notion.js";
 import type { Runtime } from "./runtime.js";
 
@@ -188,6 +190,20 @@ notion
   .command("clear-tasks-db")
   .description("forget the tasks DB — stop syncing tasks to Notion")
   .action(async () => process.exit(await notionClearTasksDbCommand()));
+
+notion
+  .command("set-briefs-page <id>")
+  .description(
+    "tell aide-brief which Notion page to archive daily briefs under",
+  )
+  .action(async (id: string) =>
+    process.exit(await notionSetBriefsPageCommand(id)),
+  );
+
+notion
+  .command("clear-briefs-page")
+  .description("forget the briefs parent page — stop archiving briefs to Notion")
+  .action(async () => process.exit(await notionClearBriefsPageCommand()));
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);

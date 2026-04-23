@@ -99,6 +99,13 @@ Call `aide-hub.save_brief` with a `DailyBrief`:
 
 Print the markdown exactly as generated. Do not add preamble or postscript.
 
+### Step 6 (optional). Archive to Notion
+
+If `AIDE_NOTION_BRIEFS_PAGE` env var is set, use `plugin:Notion:notion` tools to create a child page under it, with:
+- Title: `简报 YYYY-MM-DD`（or `Brief YYYY-MM-DD` when `AIDE_LANG=en`）
+- Body: the same markdown as Step 3.
+If Notion sync fails or the env var is unset, do NOT error — the local save in Step 4 is already enough.
+
 ## Rules
 
 1. **No speculation** — only report what's in the hub. If something is missing, say so explicitly ("no triage in the last 24h — run `aide run triage`").

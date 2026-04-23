@@ -54,13 +54,17 @@ export async function notionStatusCommand(): Promise<number> {
   const auth = await checkAuth();
   const raw = await readEnvRaw();
   const db = extractVar(raw, "AIDE_NOTION_TASKS_DB");
+  const briefs = extractVar(raw, "AIDE_NOTION_BRIEFS_PAGE");
   const emoji = (ok: boolean) => (ok ? kleur.green("✓") : kleur.red("✗"));
   console.log(kleur.bold("\naide notion status\n"));
   console.log(
-    `  ${emoji(auth === "ok")} Notion MCP auth       ${kleur.dim(auth)}`,
+    `  ${emoji(auth === "ok")} Notion MCP auth        ${kleur.dim(auth)}`,
   );
   console.log(
-    `  ${emoji(db !== null)} tasks DB configured   ${kleur.dim(db ?? "(unset — `aide notion set-tasks-db <id>`)")}`,
+    `  ${emoji(db !== null)} tasks DB configured    ${kleur.dim(db ?? "(unset — `aide notion set-tasks-db <id>`)")}`,
+  );
+  console.log(
+    `  ${emoji(briefs !== null)} briefs archive page    ${kleur.dim(briefs ?? "(unset — `aide notion set-briefs-page <id>`)")}`,
   );
   if (auth !== "ok") {
     console.log(
@@ -106,5 +110,32 @@ export async function notionSetTasksDbCommand(
 export async function notionClearTasksDbCommand(): Promise<number> {
   await upsertVar("AIDE_NOTION_TASKS_DB", null);
   console.log(kleur.green("✓ tasks DB cleared"));
+  return 0;
+}
+
+export async function notionSetBriefsPageCommand(
+  id: string | undefined,
+): Promise<number> {
+  if (!id) {
+    console.error(kleur.red("Usage: aide notion set-briefs-page <page_id>"));
+    return 1;
+  }
+  const cleaned = id.replace(/[^0-9a-fA-F-]/g, "");
+  if (cleaned.length < 32) {
+    console.error(
+      kleur.red(
+        `That doesn't look like a Notion page id (expected ≥ 32 hex chars).`,
+      ),
+    );
+    return 1;
+  }
+  await upsertVar("AIDE_NOTION_BRIEFS_PAGE", cleaned);
+  console.log(kleur.green(`✓ briefs parent page set to ${cleaned}`));
+  return 0;
+}
+
+export async function notionClearBriefsPageCommand(): Promise<number> {
+  await upsertVar("AIDE_NOTION_BRIEFS_PAGE", null);
+  console.log(kleur.green("✓ briefs parent page cleared"));
   return 0;
 }
