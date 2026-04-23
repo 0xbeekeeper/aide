@@ -6,6 +6,10 @@ import { readConfig } from "./config.js";
 import { getClient, resolveEntity } from "@aide-os/mcp-telegram";
 import { t } from "./i18n.js";
 import { buildAskPrompt, runClaudeAndCapture } from "./ask.js";
+import {
+  buildNotionChatPrompt,
+  notionChatConversationId,
+} from "./notion-chat.js";
 
 interface CreateBotOptions {
   token: string;
@@ -25,6 +29,14 @@ const awaitingEdit = new Map<number, { draftId: string; msgId: number }>();
  * context every turn.
  */
 const askingAbout = new Map<number, { draftId: string; cardMsgId: number }>();
+
+/**
+ * Notion-chat mode: free-form multi-turn conversation where aide operates
+ * Notion on the owner's behalf. No card context. Entered via /notion,
+ * exited via /done. Value is the chat id we're DMing in (same as owner's
+ * private chat in practice) for thread anchoring.
+ */
+const notionChatting = new Set<number>();
 
 export function createBot(opts: CreateBotOptions): Bot {
   const bot = new Bot(opts.token);
@@ -331,8 +343,22 @@ export function createBot(opts: CreateBotOptions): Bot {
   });
 
   bot.command("done", async (ctx) => {
-    const had = askingAbout.delete(opts.ownerId);
-    await ctx.reply(had ? t().ask_done : t().ask_no_active);
+    const hadAsk = askingAbout.delete(opts.ownerId);
+    const hadNotion = notionChatting.delete(opts.ownerId);
+    if (hadNotion) {
+      await ctx.reply(t().notion_done);
+      return;
+    }
+    await ctx.reply(hadAsk ? t().ask_done : t().ask_no_active);
+  });
+
+  bot.command("notion", async (ctx) => {
+    // Entering Notion-chat clears any other active mode so we don't mix
+    // free-form instructions with a pending card edit or card ask.
+    awaitingEdit.delete(opts.ownerId);
+    askingAbout.delete(opts.ownerId);
+    notionChatting.add(opts.ownerId);
+    await ctx.reply(t().notion_enter);
   });
 
   bot.on("message:text", async (ctx) => {
@@ -450,6 +476,56 @@ export function createBot(opts: CreateBotOptions): Bot {
           );
         } catch {
           await ctx.reply(t().ask_failed(msg));
+        }
+      }
+      return;
+    }
+
+    // Priority 3: notion-chat mode (multi-turn, stays open until /done).
+    // No card context — Claude runs the aide-notion-chat skill and operates
+    // Notion directly for the owner.
+    if (notionChatting.has(opts.ownerId)) {
+      const convId = notionChatConversationId(opts.ownerId);
+      const nowUser = new Date().toISOString();
+      await storage.appendConversationTurn(
+        convId,
+        { role: "user", text, ts: nowUser },
+        { chat_id: String(ctx.chat.id) },
+      );
+
+      const thinkingMsg = await ctx.reply(t().notion_thinking);
+
+      try {
+        const prompt = await buildNotionChatPrompt(opts.ownerId, text);
+        const answer = await runClaudeAndCapture(prompt);
+        const nowAssistant = new Date().toISOString();
+        await storage.appendConversationTurn(convId, {
+          role: "assistant",
+          text: answer,
+          ts: nowAssistant,
+        });
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            thinkingMsg.message_id,
+            answer.length > 0 ? answer : "(empty answer)",
+            { link_preview_options: { is_disabled: true } },
+          );
+        } catch {
+          await ctx.reply(answer, {
+            link_preview_options: { is_disabled: true },
+          });
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        try {
+          await ctx.api.editMessageText(
+            ctx.chat.id,
+            thinkingMsg.message_id,
+            t().notion_failed(msg),
+          );
+        } catch {
+          await ctx.reply(t().notion_failed(msg));
         }
       }
       return;

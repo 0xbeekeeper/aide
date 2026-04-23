@@ -72,6 +72,10 @@ interface Strings {
   task_snooze_toast: string;
   task_drop_toast: string;
   task_not_found: string;
+  notion_enter: string;
+  notion_thinking: string;
+  notion_failed: (err: string) => string;
+  notion_done: string;
 }
 
 const EN: Strings = {
@@ -119,7 +123,7 @@ const EN: Strings = {
   sent_via_edit_label: "Sent (edited)",
   failed_prefix: "Failed",
   start_greeting:
-    "✓ aide bot is online.\n\nOn each card:\n  ✅ Send       — send the draft as you\n  🔄 Next style — switch to next candidate\n  💬 Ask        — chat with me about this card\n  📝 Edit       — type your own version\n  🔍 Context    — show surrounding messages\n  ⏭️ Skip       — drop the card\n\nCommands:\n/pending — how many cards are waiting\n/tasks   — open task list\n/done    — close an active 💬 Ask conversation",
+    "✓ aide bot is online.\n\nOn each card:\n  ✅ Send       — send the draft as you\n  🔄 Next style — switch to next candidate\n  💬 Ask        — chat with me about this card\n  📝 Edit       — type your own version\n  🔍 Context    — show surrounding messages\n  ⏭️ Skip       — drop the card\n\nCommands:\n/pending — how many cards are waiting\n/tasks   — open task list\n/notion  — chat with me to operate Notion\n/done    — close an active 💬 Ask or /notion conversation",
   not_owner:
     "This bot is privately configured for its owner. You are not its owner — aborting.",
   cycle_toast: (style) => `→ ${style}`,
@@ -143,6 +147,11 @@ const EN: Strings = {
   task_snooze_toast: "snoozed 24h",
   task_drop_toast: "dropped",
   task_not_found: "task not found",
+  notion_enter:
+    "🗂 Notion chat mode. Tell me what to search / create / update in Notion. I'll keep the thread open until you send /done.",
+  notion_thinking: "working on Notion…",
+  notion_failed: (err: string) => `❌ Notion op failed: ${err}`,
+  notion_done: "Notion chat closed.",
 };
 
 const ZH: Strings = {
@@ -185,7 +194,7 @@ const ZH: Strings = {
   sent_via_edit_label: "已发送（编辑版）",
   failed_prefix: "发送失败",
   start_greeting:
-    "✓ aide bot 已上线。\n\n每张卡片上：\n  ✅ 发送     — 用你的身份发草稿\n  🔄 换风格   — 切下一条候选\n  💬 追问     — 针对这条跟我聊\n  📝 编辑     — 你打字替换\n  🔍 上下文   — 看前后消息\n  ⏭️ 跳过     — 不发\n\n命令：\n/pending — 剩几张待处理\n/tasks   — 待办任务\n/done    — 退出 💬 追问 对话",
+    "✓ aide bot 已上线。\n\n每张卡片上：\n  ✅ 发送     — 用你的身份发草稿\n  🔄 换风格   — 切下一条候选\n  💬 追问     — 针对这条跟我聊\n  📝 编辑     — 你打字替换\n  🔍 上下文   — 看前后消息\n  ⏭️ 跳过     — 不发\n\n命令：\n/pending — 剩几张待处理\n/tasks   — 待办任务\n/notion  — 对话操控 Notion\n/done    — 退出 💬 追问 或 /notion 对话",
   not_owner:
     "此 bot 仅对其 owner 开放。你不是 owner，已终止。",
   cycle_toast: (style) => `→ ${style}`,
@@ -209,6 +218,11 @@ const ZH: Strings = {
   task_snooze_toast: "已推迟 24h",
   task_drop_toast: "已丢弃",
   task_not_found: "任务不存在",
+  notion_enter:
+    "🗂 Notion 对话模式。告诉我要在 Notion 里搜 / 新建 / 更新什么，我来做。发 /done 退出。",
+  notion_thinking: "处理中…",
+  notion_failed: (err: string) => `❌ Notion 操作失败：${err}`,
+  notion_done: "Notion 对话已结束。",
 };
 
 export function t(): Strings {
